@@ -1,0 +1,188 @@
+@model ProductDetailViewModel
+@{
+    ViewData["Title"] = Model.Product.Name;
+    var hues = new[] { "#0e7c74", "#b7791f", "#c2410c", "#3f6212", "#1d4ed8", "#7c3aed" };
+    var firstChar = !string.IsNullOrWhiteSpace(Model.Product.Name) ? Model.Product.Name.Trim()[0] : '?';
+    var hue = hues[Math.Abs(firstChar) % hues.Length];
+
+    var total = Model.Product.TotalReviews > 0 ? Model.Product.TotalReviews : 1;
+    var dist = Model.Product.StarDistribution;
+    var starBars = new[]
+    {
+        (Level: 5, Count: dist.Star5, Pct: dist.Star5 * 100 / total),
+        (Level: 4, Count: dist.Star4, Pct: dist.Star4 * 100 / total),
+        (Level: 3, Count: dist.Star3, Pct: dist.Star3 * 100 / total),
+        (Level: 2, Count: dist.Star2, Pct: dist.Star2 * 100 / total),
+        (Level: 1, Count: dist.Star1, Pct: dist.Star1 * 100 / total)
+    };
+
+    var currentStar = Model.FilterQuery.Star?.ToString() ?? "";
+    var currentHasImages = Model.FilterQuery.HasImages == true;
+    var currentSort = Model.FilterQuery.Sort ?? "newest";
+}
+
+<p class="kicker">
+    <a asp-controller="Products" asp-action="Index">Khám phá</a> / @Model.Product.CategoryName
+</p>
+
+<div class="layout">
+    <!-- Left Column: Product Info & Stats -->
+    <aside class="stack">
+        <div class="card">
+            <div class="thumb" style="height:220px; border-radius:10px 10px 0 0; @(string.IsNullOrEmpty(Model.Product.ImageUrl) ? $"background:{hue}" : "")">
+                @if (!string.IsNullOrEmpty(Model.Product.ImageUrl))
+                {
+                    <img src="@Model.Product.ImageUrl" alt="@Model.Product.Name" style="width:100%; height:100%; object-fit:cover;" />
+                }
+                else
+                {
+                    <span style="font-size:48px; color:white; font-weight:700;">@char.ToUpper(firstChar)</span>
+                }
+            </div>
+            <div class="pad">
+                <p class="kicker">@Model.Product.Brand</p>
+                <h2 style="margin:6px 0;">@Model.Product.Name</h2>
+                <p class="price" style="font-size:20px; font-weight:700; color:var(--teal); margin:8px 0;">
+                    @Model.Product.Price.ToString("N0") ₫
+                </p>
+                <p style="margin:10px 0 16px 0; color:var(--muted); font-size:14px; line-height:1.5;">
+                    @Model.Product.Description
+                </p>
+                <a class="btn" style="width:100%; text-align:center; display:block;"
+                   asp-controller="Reviews" asp-action="Create" asp-route-productId="@Model.Product.Id">
+                    Viết đánh giá
+                </a>
+            </div>
+        </div>
+
+        <div class="stat card pad">
+            <div class="big" style="font-size:42px; font-weight:800; line-height:1;">
+                @Model.Product.AvgRating.ToString("0.0")
+            </div>
+            <div style="margin:6px 0;">
+                <span class="stars">
+                    @{
+                        var rounded = (int)Math.Round(Model.Product.AvgRating);
+                    }
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <svg class="star @(i <= rounded ? "on" : "")" viewBox="0 0 20 20" aria-hidden="true">
+                            <path d="M10 1.8 12.4 7l5.6.5-4.2 3.7 1.3 5.5L10 14.2 4.9 16.7 6.2 11.2 2 7.5 7.6 7z" />
+                        </svg>
+                    }
+                </span>
+            </div>
+            <p class="muted" style="margin-bottom:14px;">@Model.Product.TotalReviews đánh giá</p>
+            <div class="bars">
+                @foreach (var bar in starBars)
+                {
+                    <div class="bar-row">
+                        <span>@bar.Level★</span>
+                        <div class="track">
+                            <span style="width:@(Model.Product.TotalReviews > 0 ? bar.Pct : 0)%;"></span>
+                        </div>
+                        <span>@bar.Count</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </aside>
+
+    <!-- Right Column: Flaw-first highlights & Review List -->
+    <section>
+        <!-- Flaw-First Showcase -->
+        <div class="section-head row" style="justify-content:space-between; align-items:flex-end;">
+            <div>
+                <p class="kicker">Flaw-first</p>
+                <h2 style="margin:4px 0 0 0;">Hạn chế thực tế</h2>
+            </div>
+            <span class="badge hot">@Model.Flaws.FlawReviewCount bài 1–2 sao</span>
+        </div>
+
+        <div class="flaw-list" style="margin-top:12px;">
+            @if (Model.Flaws.Flaws.Count > 0)
+            {
+                @foreach (var flaw in Model.Flaws.Flaws)
+                {
+                    <article class="flaw">
+                        <span class="badge hot">@flaw.Rating sao</span>
+                        <p style="margin:0;">@flaw.Cons</p>
+                    </article>
+                }
+            }
+            else
+            {
+                <div class="empty panel pad" style="text-align:center;">
+                    Chưa có bài review 1–2 sao nào phàn nàn về sản phẩm này.
+                </div>
+            }
+        </div>
+
+        <!-- All Reviews -->
+        <div class="section-head row" style="justify-content:space-between; align-items:center; margin-top:36px;">
+            <h2 style="margin:0;">Tất cả đánh giá</h2>
+            <a class="btn" asp-controller="Reviews" asp-action="Create" asp-route-productId="@Model.Product.Id">
+                Viết đánh giá
+            </a>
+        </div>
+
+        <!-- Review Filters -->
+        <div class="chips" style="margin:14px 0;">
+            <a class="chip @(string.IsNullOrEmpty(currentStar) ? "on" : "")"
+               asp-controller="Products" asp-action="Details" asp-route-id="@Model.Product.Id"
+               asp-route-sort="@currentSort"
+               asp-route-hasImages="@(currentHasImages ? "true" : "")">
+                Mọi sao
+            </a>
+            @foreach (var starVal in new[] { "5", "4", "3", "2", "1" })
+            {
+                <a class="chip @(currentStar == starVal ? "on" : "")"
+                   asp-controller="Products" asp-action="Details" asp-route-id="@Model.Product.Id"
+                   asp-route-star="@starVal"
+                   asp-route-sort="@currentSort"
+                   asp-route-hasImages="@(currentHasImages ? "true" : "")">
+                    @starVal sao
+                </a>
+            }
+            <a class="chip @(currentHasImages ? "on" : "")"
+               asp-controller="Products" asp-action="Details" asp-route-id="@Model.Product.Id"
+               asp-route-star="@currentStar"
+               asp-route-sort="@currentSort"
+               asp-route-hasImages="@(currentHasImages ? "" : "true")">
+                Có ảnh
+            </a>
+            <a class="chip @(currentSort == "newest" ? "on" : "")"
+               asp-controller="Products" asp-action="Details" asp-route-id="@Model.Product.Id"
+               asp-route-star="@currentStar"
+               asp-route-sort="newest"
+               asp-route-hasImages="@(currentHasImages ? "true" : "")">
+                Mới nhất
+            </a>
+            <a class="chip @(currentSort == "rating" ? "on" : "")"
+               asp-controller="Products" asp-action="Details" asp-route-id="@Model.Product.Id"
+               asp-route-star="@currentStar"
+               asp-route-sort="rating"
+               asp-route-hasImages="@(currentHasImages ? "true" : "")">
+                Theo sao
+            </a>
+        </div>
+
+        <!-- Review List -->
+        @if (Model.Reviews.Items.Count > 0)
+        {
+            <div class="stack">
+                @foreach (var review in Model.Reviews.Items)
+                {
+                    <partial name="_ReviewCard" model="review" />
+                }
+            </div>
+            <partial name="_Pager" model="(Model.Reviews.Page, Model.Reviews.TotalPages)" />
+        }
+        else
+        {
+            <div class="empty panel pad" style="text-align:center; padding:36px;">
+                Chưa có bài review nào khớp với bộ lọc đã chọn.
+            </div>
+        }
+    </section>
+</div>

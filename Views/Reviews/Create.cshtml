@@ -1,0 +1,83 @@
+@model ReviewFormViewModel
+@{
+    ViewData["Title"] = $"Đánh giá {Model.ProductName}";
+}
+
+<section class="auth-card" style="max-width:720px; margin:20px auto;">
+    <p class="kicker">Viết đánh giá sản phẩm</p>
+    <h1 style="margin:4px 0;">@Model.ProductName</h1>
+    <p class="muted">@Model.ProductBrand — Viết riêng điểm hài lòng và hạn chế thực tế. Có thể đăng ẩn danh.</p>
+
+    <form class="form" asp-controller="Reviews" asp-action="Create" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="ProductId" />
+        <div asp-validation-summary="ModelOnly" class="panel" style="background:#fce8e6; color:#c5221f; padding:10px; margin-bottom:12px; border-radius:6px;"></div>
+
+        <!-- Star Picker -->
+        <div>
+            <span class="label" style="display:block; font-weight:600; margin-bottom:6px;">Số sao đánh giá</span>
+            <input type="hidden" asp-for="Rating" id="ratingInput" />
+            <div id="star-picker" style="display:flex; gap:6px;">
+                @for (int n = 1; n <= 5; n++)
+                {
+                    <button class="star-btn" type="button" data-val="@n" onclick="setRating(@n)" aria-label="@n sao"
+                            style="background:none; border:none; cursor:pointer; padding:4px;">
+                        <svg class="star @(n <= Model.Rating ? "on" : "")" viewBox="0 0 20 20" aria-hidden="true" style="width:28px; height:28px;">
+                            <path d="M10 1.8 12.4 7l5.6.5-4.2 3.7 1.3 5.5L10 14.2 4.9 16.7 6.2 11.2 2 7.5 7.6 7z" />
+                        </svg>
+                    </button>
+                }
+            </div>
+            <span asp-validation-for="Rating" style="color:var(--flaw); font-size:12px;"></span>
+        </div>
+
+        <!-- Pros Field -->
+        <label class="field" style="margin-top:14px;">
+            <span>Điểm hài lòng (Pros) — <small class="muted">Tối thiểu 10 ký tự</small></span>
+            <textarea asp-for="Pros" required minlength="10" maxlength="4000" rows="4" placeholder="Những điểm bạn thấy ổn, ưu điểm vượt trội khi sử dụng thực tế..."></textarea>
+            <span asp-validation-for="Pros" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <!-- Cons Field -->
+        <label class="field">
+            <span>Hạn chế thực tế (Cons) — <small class="muted">Tối thiểu 10 ký tự</small></span>
+            <textarea asp-for="Cons" required minlength="10" maxlength="4000" rows="4" placeholder="Những điều chưa ổn, nhược điểm, lỗi vặt, hoặc điểm chưa hài lòng..."></textarea>
+            <span asp-validation-for="Cons" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <!-- Anonymous Checkbox -->
+        <label class="row" style="gap:8px; align-items:center; cursor:pointer; margin:8px 0;">
+            <input type="checkbox" asp-for="IsAnonymous" style="width:18px; height:18px;" />
+            <span>Đăng bài ẩn danh (Tên và email của bạn sẽ không hiển thị ra ngoài)</span>
+        </label>
+
+        <!-- File Upload for Proof Images -->
+        <label class="field">
+            <span>Ảnh minh chứng thực tế (tối đa 6 ảnh)</span>
+            <input name="files" type="file" accept="image/*" multiple />
+        </label>
+
+        <div class="row" style="margin-top:16px; gap:10px;">
+            <button class="btn" type="submit" style="min-width:140px;">Đăng bài review</button>
+            <a class="btn-ghost" asp-controller="Products" asp-action="Details" asp-route-id="@Model.ProductId">Hủy</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <script>
+        function setRating(val) {
+            document.getElementById("ratingInput").value = val;
+            const buttons = document.querySelectorAll("#star-picker .star-btn");
+            buttons.forEach(btn => {
+                const btnVal = Number(btn.dataset.val);
+                const star = btn.querySelector(".star");
+                if (btnVal <= val) {
+                    star.classList.add("on");
+                } else {
+                    star.classList.remove("on");
+                }
+            });
+        }
+    </script>
+}

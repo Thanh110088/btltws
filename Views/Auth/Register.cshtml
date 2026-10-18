@@ -1,0 +1,38 @@
+@model RegisterRequest
+@{
+    ViewData["Title"] = "Đăng ký";
+}
+
+<section class="auth-card" style="max-width:440px; margin:40px auto;">
+    <p class="kicker">Tham gia cộng đồng</p>
+    <h1>Tạo tài khoản</h1>
+
+    <form class="form" asp-controller="Auth" asp-action="Register" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="panel" style="background:#fce8e6; color:#c5221f; padding:10px; margin-bottom:12px; border-radius:6px;"></div>
+
+        <label class="field">
+            <span>Họ và tên</span>
+            <input asp-for="FullName" required minlength="2" maxlength="150" placeholder="VD: Nguyễn Văn A" />
+            <span asp-validation-for="FullName" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <label class="field">
+            <span>Email</span>
+            <input asp-for="Email" type="email" required placeholder="name@domain.com" />
+            <span asp-validation-for="Email" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <label class="field">
+            <span>Mật khẩu (tối thiểu 6 ký tự)</span>
+            <input asp-for="Password" type="password" required minlength="6" placeholder="••••••••" />
+            <span asp-validation-for="Password" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <button class="btn" type="submit" style="width:100%; margin-top:10px;">Đăng ký</button>
+    </form>
+
+    <p class="muted" style="margin-top:16px; font-size:14px;">
+        Đã có tài khoản? <a asp-controller="Auth" asp-action="Login">Đăng nhập</a>
+    </p>
+</section>

@@ -1,0 +1,22 @@
+@model (int Page, int TotalPages)
+@{
+    if (Model.TotalPages <= 1) return;
+    var query = Context.Request.Query.ToDictionary(k => k.Key, v => (string?)v.Value.ToString());
+    string GetPageUrl(int pageNo)
+    {
+        query["page"] = pageNo.ToString();
+        return QueryString.Create(query).ToString();
+    }
+}
+
+<div class="pager" style="display:flex; justify-content:center; align-items:center; gap:12px; margin:24px 0;">
+    @if (Model.Page > 1)
+    {
+        <a class="btn-ghost" href="@GetPageUrl(Model.Page - 1)">‹ Trước</a>
+    }
+    <span class="muted" style="font-size:14px;">Trang @Model.Page / @Model.TotalPages</span>
+    @if (Model.Page < Model.TotalPages)
+    {
+        <a class="btn-ghost" href="@GetPageUrl(Model.Page + 1)">Sau ›</a>
+    }
+</div>

@@ -1,0 +1,132 @@
+@model ProductIndexViewModel
+@{
+    ViewData["Title"] = "Khám phá sản phẩm";
+    var currentCatId = Model.Query.CategoryId?.ToString() ?? "";
+}
+
+<section class="hero">
+    <div class="hero-copy">
+        <p class="kicker">Flaw-first review</p>
+        <h1>Đọc hạn chế thực tế trước khi tin số sao.</h1>
+        <p>Mỗi bài viết tách riêng điểm hài lòng và hạn chế. Phần 1–2 sao được gom lại để thấy sản phẩm yếu ở đâu.</p>
+        <div class="row" style="margin-top:16px">
+            <a class="btn" asp-controller="Reviews" asp-action="Create">Viết đánh giá</a>
+        </div>
+    </div>
+    <aside class="hero-panel">
+        <strong>Một bài review gồm hai phần độc lập</strong>
+        <div class="pair">
+            <div class="pill-pros">Pros — điểm hài lòng</div>
+            <div class="pill-cons">Cons — hạn chế thực tế</div>
+        </div>
+        <span class="muted">Có thể đăng ẩn danh. Tên và email sẽ không hiện ra ngoài.</span>
+    </aside>
+</section>
+
+<!-- Category Chips -->
+<div class="chips" style="margin-bottom:12px;">
+    <a class="chip @(string.IsNullOrEmpty(currentCatId) ? "on" : "")"
+       asp-controller="Products" asp-action="Index"
+       asp-route-keyword="@Model.Query.Keyword"
+       asp-route-sort="@Model.Query.Sort"
+       asp-route-minPrice="@Model.Query.MinPrice"
+       asp-route-maxPrice="@Model.Query.MaxPrice">
+        Tất cả
+    </a>
+    @foreach (var cat in Model.Categories)
+    {
+        <a class="chip @(currentCatId == cat.Id.ToString() ? "on" : "")"
+           asp-controller="Products" asp-action="Index"
+           asp-route-categoryId="@cat.Id"
+           asp-route-keyword="@Model.Query.Keyword"
+           asp-route-sort="@Model.Query.Sort"
+           asp-route-minPrice="@Model.Query.MinPrice"
+           asp-route-maxPrice="@Model.Query.MaxPrice">
+            @cat.Name
+        </a>
+    }
+</div>
+
+<!-- Quick Price Presets -->
+<div class="quick-prices row" style="gap:8px; margin-bottom:12px; font-size:13px; align-items:center; flex-wrap:wrap;">
+    <span class="muted" style="font-weight:500;">Khoảng giá nhanh:</span>
+    <button type="button" class="btn-ghost" style="padding:4px 10px; font-size:12px; border-radius:12px;" onclick="setPriceRange(null, 5000000)">Dưới 5 triệu</button>
+    <button type="button" class="btn-ghost" style="padding:4px 10px; font-size:12px; border-radius:12px;" onclick="setPriceRange(5000000, 15000000)">5 – 15 triệu</button>
+    <button type="button" class="btn-ghost" style="padding:4px 10px; font-size:12px; border-radius:12px;" onclick="setPriceRange(15000000, 30000000)">15 – 30 triệu</button>
+    <button type="button" class="btn-ghost" style="padding:4px 10px; font-size:12px; border-radius:12px;" onclick="setPriceRange(30000000, null)">Trên 30 triệu</button>
+</div>
+
+<!-- Filters Form -->
+<form class="filters" asp-controller="Products" asp-action="Index" method="get">
+    <input type="hidden" name="categoryId" value="@Model.Query.CategoryId" />
+    <label class="field" style="flex:1.5; min-width:180px;">
+        <span>Từ khóa tìm kiếm</span>
+        <input name="keyword" value="@Model.Query.Keyword" placeholder="Tên sản phẩm, hãng..." />
+    </label>
+    <label class="field">
+        <span>Giá từ (₫)</span>
+        <input id="inputMinPrice" name="minPrice" type="number" min="0" step="500000" value="@Model.Query.MinPrice" placeholder="0" />
+    </label>
+    <label class="field">
+        <span>Đến (₫)</span>
+        <input id="inputMaxPrice" name="maxPrice" type="number" min="0" step="500000" value="@Model.Query.MaxPrice" placeholder="Tối đa" />
+    </label>
+    <label class="field">
+        <span>Sắp xếp</span>
+        <select name="sort" onchange="this.form.submit()">
+            <option value="newest" selected="@(Model.Query.Sort == "newest")">Mới nhất</option>
+            <option value="rating" selected="@(Model.Query.Sort == "rating")">Số sao cao</option>
+            <option value="mostReviewed" selected="@(Model.Query.Sort == "mostReviewed")">Nhiều review</option>
+        </select>
+    </label>
+    <button class="btn" type="submit" style="align-self:flex-end;">Lọc</button>
+</form>
+
+<script>
+    function setPriceRange(min, max) {
+        const minEl = document.getElementById('inputMinPrice');
+        const maxEl = document.getElementById('inputMaxPrice');
+        if (minEl) minEl.value = min !== null ? min : '';
+        if (maxEl) maxEl.value = max !== null ? max : '';
+        const form = minEl ? minEl.closest('form') : document.querySelector('.filters');
+        if (form) form.submit();
+    }
+</script>
+
+@{
+    var hasFilter = !string.IsNullOrEmpty(Model.Query.Keyword) || Model.Query.CategoryId.HasValue || Model.Query.MinPrice.HasValue || Model.Query.MaxPrice.HasValue || (Model.Query.Sort != null && Model.Query.Sort != "newest");
+}
+<div class="row" style="justify-content:space-between; align-items:center; margin:16px 0 12px 0;">
+    <span class="muted" style="font-size:14px; font-weight:500;">
+        Tìm thấy <strong>@Model.Products.TotalItems</strong> sản phẩm
+        @if (!string.IsNullOrEmpty(Model.Query.Keyword))
+        {
+            <span> với từ khóa "<strong>@Model.Query.Keyword</strong>"</span>
+        }
+    </span>
+    @if (hasFilter)
+    {
+        <a class="btn-ghost" asp-controller="Products" asp-action="Index" style="font-size:13px; padding:4px 10px; text-decoration:none;">
+            ✕ Đặt lại bộ lọc
+        </a>
+    }
+</div>
+
+<!-- Product Grid -->
+@if (Model.Products.Items.Count > 0)
+{
+    <div class="grid">
+        @foreach (var product in Model.Products.Items)
+        {
+            <partial name="_ProductCard" model="product" />
+        }
+    </div>
+    <partial name="_Pager" model="(Model.Products.Page, Model.Products.TotalPages)" />
+}
+else
+{
+    <div class="panel empty" style="text-align:center; padding:48px 16px;">
+        <p style="font-size:16px; margin-bottom:8px;">Không có sản phẩm khớp bộ lọc.</p>
+        <a class="btn-ghost" asp-controller="Products" asp-action="Index">Đặt lại bộ lọc</a>
+    </div>
+}

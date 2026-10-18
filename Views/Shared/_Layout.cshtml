@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} — " : "")FlawFirst — Đánh giá bóc tách ưu và nhược điểm</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect rx='8' width='32' height='32' fill='%230E7C74'/%3E%3Cpath d='M8 16.5 13 21.5 24 10.5' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/app.css" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" asp-controller="Products" asp-action="Index">
+            <span class="mark" aria-hidden="true"></span>
+            <span>FlawFirst</span>
+        </a>
+        <form class="search" asp-controller="Products" asp-action="Index" method="get">
+            <input name="keyword" type="search" placeholder="Tìm sản phẩm, thương hiệu, ngành hàng" aria-label="Tìm kiếm" value="@(Context.Request.Query["keyword"])" />
+            <button type="submit">Tìm</button>
+        </form>
+        <nav class="nav" id="nav">
+            <a class="btn-ghost" asp-controller="Products" asp-action="Index">Khám phá</a>
+            <a class="btn" asp-controller="Reviews" asp-action="Create">Viết đánh giá</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="btn-ghost" asp-controller="Reviews" asp-action="Mine">Bài của tôi</a>
+                <a class="btn-ghost" asp-controller="Social" asp-action="Saved">Đã lưu</a>
+                @if (User.IsInRole(AppRoles.Admin))
+                {
+                    <a class="btn-ghost" asp-controller="Admin" asp-action="Index">Quản trị</a>
+                }
+                <div class="row" style="gap:8px; align-items:center;">
+                    @{
+                        var initial = "U";
+                        var nameClaim = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value;
+                        if (!string.IsNullOrEmpty(nameClaim))
+                        {
+                            initial = nameClaim.Substring(0, 1).ToUpper();
+                        }
+                    }
+                    <span class="avatar" title="@nameClaim">@initial</span>
+                    <a class="btn-ghost" asp-controller="Auth" asp-action="Logout" style="padding:6px 12px;font-size:13px;">Đăng xuất</a>
+                </div>
+            }
+            else
+            {
+                <a class="btn-ghost" asp-controller="Auth" asp-action="Login">Đăng nhập</a>
+                <a class="btn" asp-controller="Auth" asp-action="Register">Đăng ký</a>
+            }
+        </nav>
+    </header>
+
+    <main id="main" class="wrap">
+        @if (TempData["Success"] != null)
+        {
+            <div class="panel" style="background:#e6f4ea; border-left:4px solid #137333; padding:12px 16px; margin-bottom:20px; border-radius:6px; color:#137333; font-weight:500;">
+                ✓ @TempData["Success"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="panel" style="background:#fce8e6; border-left:4px solid #c5221f; padding:12px 16px; margin-bottom:20px; border-radius:6px; color:#c5221f; font-weight:500;">
+                ✕ @TempData["Error"]
+            </div>
+        }
+        @if (TempData["Info"] != null)
+        {
+            <div class="panel" style="background:#e8f0fe; border-left:4px solid #1a73e8; padding:12px 16px; margin-bottom:20px; border-radius:6px; color:#1a73e8; font-weight:500;">
+                ℹ @TempData["Info"]
+            </div>
+        }
+
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <span>FlawFirst — ưu điểm và hạn chế thực tế, tách riêng.</span>
+        <span>Mô hình ASP.NET Core MVC (Razor .cshtml)</span>
+    </footer>
+
+    <!-- Global Toast & Modal Container -->
+    <div id="toast" class="toast" hidden></div>
+    <div id="modal" hidden></div>
+
+    <script>
+        // Shared interactive scripts for Razor Views (AJAX progressive enhancement)
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            if (!toast) return;
+            toast.textContent = message;
+            toast.hidden = false;
+            toast.classList.add("on");
+            clearTimeout(window.__toastTimer);
+            window.__toastTimer = setTimeout(() => {
+                toast.classList.remove("on");
+                toast.hidden = true;
+            }, 3000);
+        }
+
+        function openModal(contentHtml) {
+            const modal = document.getElementById("modal");
+            if (!modal) return;
+            modal.innerHTML = `<div class="modal-back"><div class="modal-card">${contentHtml}</div></div>`;
+            modal.hidden = false;
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("modal");
+            if (!modal) return;
+            modal.hidden = true;
+            modal.innerHTML = "";
+        }
+
+        document.addEventListener("click", function(e) {
+            if (e.target.classList.contains("modal-back") || e.target.closest("[data-action='close-modal']")) {
+                closeModal();
+            }
+        });
+
+        async function handleVote(reviewId, voteType, button) {
+            try {
+                const response = await fetch("/Social/Vote", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: `reviewId=${reviewId}&voteType=${voteType}`
+                });
+                if (response.status === 401) {
+                    window.location.href = `/Auth/Login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
+                    return;
+                }
+                const data = await response.json();
+                const card = button.closest(".card") || button.closest("article");
+                if (card) {
+                    const upEl = card.querySelector(`[data-up="${reviewId}"]`);
+                    const downEl = card.querySelector(`[data-down="${reviewId}"]`);
+                    if (upEl) upEl.textContent = data.upvoteCount;
+                    if (downEl) downEl.textContent = data.downvoteCount;
+                }
+                showToast(data.currentVote ? (data.currentVote === "Up" ? "Đã ghi nhận hữu ích" : "Đã ghi nhận không hữu ích") : "Đã gỡ vote");
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function handleBookmark(reviewId, button) {
+            const isBookmarked = button.classList.contains("on");
+            try {
+                const response = await fetch("/Social/Bookmark", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: `reviewId=${reviewId}&remove=${isBookmarked}`
+                });
+                if (response.status === 401) {
+                    window.location.href = `/Auth/Login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
+                    return;
+                }
+                const data = await response.json();
+                if (data.bookmarked) {
+                    button.classList.add("on");
+                    button.textContent = "Đã lưu";
+                    showToast("Đã lưu bài viết");
+                } else {
+                    button.classList.remove("on");
+                    button.textContent = "Lưu";
+                    showToast("Đã bỏ lưu bài viết");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function copyShareLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                showToast("Đã chép link chia sẻ!");
+            }).catch(() => {
+                showToast(url);
+            });
+        }
+
+        function openReportModal(reviewId) {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+            const html = `
+                <h3>Báo cáo bài review</h3>
+                <form class="form" action="/Social/Report" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="__RequestVerificationToken" value="${token}" />
+                    <input type="hidden" name="reviewId" value="${reviewId}" />
+                    <input type="hidden" name="returnUrl" value="${window.location.pathname}" />
+                    <label class="field">
+                        <span>Lý do vi phạm</span>
+                        <textarea name="reason" required minlength="10" placeholder="Mô tả lý do bài viết này vi phạm quy định (tối thiểu 10 ký tự)"></textarea>
+                    </label>
+                    <label class="field">
+                        <span>Ảnh bằng chứng (tùy chọn)</span>
+                        <input name="files" type="file" accept="image/*" multiple />
+                    </label>
+                    <div class="row" style="margin-top:12px; gap:8px;">
+                        <button class="btn" type="submit">Gửi báo cáo</button>
+                        <button class="btn-ghost" type="button" data-action="close-modal">Hủy</button>
+                    </div>
+                </form>
+            `;
+            openModal(html);
+        }
+
+        async function toggleComments(reviewId, button) {
+            const card = button.closest(".card") || button.closest("article");
+            let box = card.querySelector(`.comments-box[data-for="${reviewId}"]`);
+            if (box) {
+                box.hidden = !box.hidden;
+                return;
+            }
+
+            box = document.createElement("div");
+            box.className = "comments-box";
+            box.dataset.for = reviewId;
+            box.innerHTML = `<div class="loading" style="padding:12px 0;">Đang tải bình luận...</div>`;
+            card.appendChild(box);
+
+            try {
+                const res = await fetch(`/Social/Comments/${reviewId}`);
+                const data = await res.json();
+                const comments = data.items || [];
+                const commentsListHtml = comments.length
+                    ? comments.map(c => `
+                        <div class="comment-item" style="border-top:1px solid var(--border); padding:8px 0; font-size:14px;">
+                            <div class="row" style="justify-content:space-between; margin-bottom:4px;">
+                                <strong>${c.isAnonymous ? "Người dùng ẩn danh" : (c.authorName || "Thành viên")}</strong>
+                                <span class="muted" style="font-size:12px;">${new Date(c.createdAt).toLocaleDateString("vi-VN")}</span>
+                            </div>
+                            <p style="margin:0;">${c.content}</p>
+                        </div>
+                    `).join("")
+                    : `<p class="muted" style="font-size:14px;">Chưa có bình luận nào.</p>`;
+
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+                box.innerHTML = `
+                    <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+                        <h4 style="margin:0 0 10px 0;">Bình luận (${data.totalItems || comments.length})</h4>
+                        <div class="comments-list" style="margin-bottom:12px;">${commentsListHtml}</div>
+                        <form class="form" action="/Social/Comment" method="post">
+                            <input type="hidden" name="__RequestVerificationToken" value="${token}" />
+                            <input type="hidden" name="reviewId" value="${reviewId}" />
+                            <input type="hidden" name="returnUrl" value="${window.location.pathname}" />
+                            <label class="field" style="margin-bottom:8px;">
+                                <textarea name="content" required minlength="1" maxlength="2000" rows="2" placeholder="Viết bình luận của bạn..."></textarea>
+                            </label>
+                            <div class="row" style="justify-content:space-between; align-items:center;">
+                                <label class="row" style="gap:6px; font-size:13px; align-items:center;">
+                                    <input type="checkbox" name="isAnonymous" value="true" /> Bình luận ẩn danh
+                                </label>
+                                <button class="btn" type="submit" style="padding:6px 14px; font-size:13px;">Gửi</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+            } catch (err) {
+                box.innerHTML = `<p class="muted">Không tải được bình luận.</p>`;
+            }
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

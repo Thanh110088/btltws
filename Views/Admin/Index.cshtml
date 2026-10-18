@@ -1,0 +1,227 @@
+@model AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Quản trị hệ thống";
+}
+
+<div class="section-head row" style="justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <div>
+        <p class="kicker">Hệ thống quản trị</p>
+        <h1 style="margin:4px 0 0 0;">Bảng điều khiển Quản trị viên</h1>
+    </div>
+    <span class="badge" style="font-size:14px; padding:6px 12px;">Vai trò: Quản trị (Admin)</span>
+</div>
+
+<!-- Tabs -->
+<div class="tabs" style="display:flex; gap:8px; margin-bottom:20px;">
+    <a class="chip @(Model.Tab == "reports" ? "on" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="reports">
+        Kiểm duyệt báo cáo
+    </a>
+    <a class="chip @(Model.Tab == "users" ? "on" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="users">
+        Quản lý người dùng
+    </a>
+    <a class="chip @(Model.Tab == "categories" ? "on" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="categories">
+        Quản lý ngành hàng
+    </a>
+</div>
+
+<!-- TAB 1: REPORTS -->
+@if (Model.Tab == "reports")
+{
+    <div class="chips" style="margin-bottom:16px;">
+        @foreach (var s in new[] { ("Pending", "Đang chờ"), ("Resolved", "Đã xử lý"), ("Dismissed", "Bỏ qua"), ("All", "Tất cả") })
+        {
+            <a class="chip @(Model.Status == s.Item1 ? "on" : "")"
+               asp-controller="Admin" asp-action="Index" asp-route-tab="reports" asp-route-status="@s.Item1">
+                @s.Item2
+            </a>
+        }
+    </div>
+
+    @if (Model.Reports != null && Model.Reports.Items.Count > 0)
+    {
+        <div class="stack" style="gap:16px;">
+            @foreach (var report in Model.Reports.Items)
+            {
+                <article class="card pad" style="background:var(--surface);">
+                    <div class="row" style="justify-content:space-between; align-items:center;">
+                        <strong style="font-size:16px;">
+                            @(report.ProductName ?? report.ReviewSnapshot ?? "Bài review đã bị gỡ")
+                        </strong>
+                        <span class="badge @(report.Status == "Pending" ? "hot" : "")">@report.Status</span>
+                    </div>
+
+                    <p class="muted" style="font-size:13px; margin:4px 0 10px 0;">
+                        Người báo cáo: @report.ReporterName (@report.ReporterEmail) · @report.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                    </p>
+
+                    <div style="background:rgba(0,0,0,0.02); padding:10px 14px; border-radius:6px; margin-bottom:10px;">
+                        <strong>Lý do vi phạm:</strong> @report.Reason
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(report.Cons))
+                    {
+                        <div class="box cons" style="margin-bottom:12px;">
+                            <h4 style="margin:0 0 4px 0;">Cons bị phản ánh</h4>
+                            <p style="margin:0;">@report.Cons</p>
+                        </div>
+                    }
+
+                    @if (report.EvidenceImageUrls != null && report.EvidenceImageUrls.Count > 0)
+                    {
+                        <div class="thumbs" style="margin-bottom:12px;">
+                            @foreach (var url in report.EvidenceImageUrls)
+                            {
+                                <a href="@url" target="_blank" rel="noopener noreferrer">
+                                    <img src="@url" alt="Bằng chứng" style="max-height:80px; border-radius:4px;" />
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    @if (report.Status == "Pending")
+                    {
+                        <div class="row" style="gap:8px; margin-top:10px; flex-wrap:wrap;">
+                            <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="Action" value="Hide" />
+                                <button class="btn-soft" type="submit">👁 Ẩn bài</button>
+                            </form>
+                            <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài review này?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="Action" value="Delete" />
+                                <button class="btn-danger" type="submit">🗑 Xóa bài</button>
+                            </form>
+                            <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;" onsubmit="return confirm('Hành động này sẽ ẩn bài và khóa tài khoản tác giả. Xác nhận?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="Action" value="Penalize" />
+                                <button class="btn-danger" type="submit">⚡ Phạt & Khóa tác giả</button>
+                            </form>
+                            <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="Action" value="Ignore" />
+                                <button class="btn-ghost" type="submit">Bỏ qua báo cáo</button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="muted" style="font-size:13px; margin:8px 0 0 0;">
+                            ✓ Đã xử lý bằng hành động: <strong>@report.Action</strong>
+                        </p>
+                    }
+                </article>
+            }
+        </div>
+        <partial name="_Pager" model="(Model.Reports.Page, Model.Reports.TotalPages)" />
+    }
+    else
+    {
+        <div class="panel empty pad" style="text-align:center; padding:36px;">
+            Không có báo cáo nào ở trạng thái "@Model.Status".
+        </div>
+    }
+}
+
+<!-- TAB 2: USERS -->
+@if (Model.Tab == "users")
+{
+    <form class="filters" asp-controller="Admin" asp-action="Index" method="get" style="margin-bottom:16px;">
+        <input type="hidden" name="tab" value="users" />
+        <label class="field grow">
+            <span>Tìm kiếm theo tên hoặc email</span>
+            <input name="keyword" value="@Model.Keyword" placeholder="Nhập tên hoặc email người dùng..." />
+        </label>
+        <button class="btn" type="submit">Tìm</button>
+    </form>
+
+    @if (Model.Users != null && Model.Users.Items.Count > 0)
+    {
+        <div class="stack" style="gap:10px;">
+            @foreach (var user in Model.Users.Items)
+            {
+                <article class="card pad row" style="justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="font-size:16px;">@user.FullName</strong>
+                        <div class="muted" style="font-size:13px;">@user.Email · Vai trò: <strong>@user.Role</strong> · Ngày tạo: @user.CreatedAt.ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <div class="row" style="gap:10px; align-items:center;">
+                        @if (user.IsLocked)
+                        {
+                            <span class="badge warn">Đang khóa</span>
+                            <form asp-controller="Admin" asp-action="SetLock" asp-route-id="@user.Id" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="IsLocked" value="false" />
+                                <button class="btn-soft" type="submit">Mở khóa</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="badge">Hoạt động</span>
+                            <form asp-controller="Admin" asp-action="SetLock" asp-route-id="@user.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn khóa tài khoản này?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="IsLocked" value="true" />
+                                <button class="btn-danger" type="submit">Khóa tài khoản</button>
+                            </form>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+        <partial name="_Pager" model="(Model.Users.Page, Model.Users.TotalPages)" />
+    }
+    else
+    {
+        <div class="panel empty pad" style="text-align:center; padding:36px;">
+            Không tìm thấy người dùng phù hợp.
+        </div>
+    }
+}
+
+<!-- TAB 3: CATEGORIES -->
+@if (Model.Tab == "categories")
+{
+    <!-- Form Create Category -->
+    <div class="panel pad" style="margin-bottom:20px; background:var(--surface);">
+        <h3 style="margin:0 0 12px 0;">Thêm ngành hàng mới</h3>
+        <form class="form" asp-controller="Admin" asp-action="CreateCategory" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row" style="gap:12px; align-items:flex-end; flex-wrap:wrap;">
+                <label class="field" style="flex:1; min-width:200px; margin:0;">
+                    <span>Tên ngành hàng</span>
+                    <input name="Name" required minlength="2" maxlength="120" placeholder="VD: Đồ gia dụng" />
+                </label>
+                <label class="field" style="flex:2; min-width:260px; margin:0;">
+                    <span>Mô tả ngắn gọn</span>
+                    <input name="Description" maxlength="500" placeholder="Mô tả ngành hàng..." />
+                </label>
+                <button class="btn" type="submit" style="margin-bottom:0;">Thêm ngành hàng</button>
+            </div>
+        </form>
+    </div>
+
+    @if (Model.Categories != null && Model.Categories.Count > 0)
+    {
+        <div class="stack" style="gap:10px;">
+            @foreach (var cat in Model.Categories)
+            {
+                <article class="card pad row" style="justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="font-size:16px;">@cat.Name</strong>
+                        <div class="muted" style="font-size:13px;">@(cat.Description ?? "Không có mô tả") · <strong>@cat.ProductCount</strong> sản phẩm</div>
+                    </div>
+                    @if (cat.ProductCount == 0)
+                    {
+                        <form asp-controller="Admin" asp-action="DeleteCategory" asp-route-id="@cat.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ngành hàng này?');">
+                            @Html.AntiForgeryToken()
+                            <button class="btn-danger" type="submit">Xóa</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="muted" style="font-size:12px;" title="Chỉ được xóa khi số sản phẩm bằng 0">Đang có sản phẩm</span>
+                    }
+                </article>
+            }
+        </div>
+    }
+}

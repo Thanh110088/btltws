@@ -1,0 +1,11 @@
+global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.AspNetCore.Mvc;
+global using FlawFirst.Api.Common;
+global using FlawFirst.Api.Controllers;
+global using FlawFirst.Api.Data;
+global using FlawFirst.Api.Entities;
+global using FlawFirst.Api.Infrastructure;
+global using FlawFirst.Api.Models;
+global using FlawFirst.Api.Models.DTOs;
+global using FlawFirst.Api.Models.ViewModels;
+global using FlawFirst.Api.Services;

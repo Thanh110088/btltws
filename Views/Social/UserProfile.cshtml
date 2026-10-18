@@ -1,0 +1,37 @@
+@model PublicUserDto
+@{
+    ViewData["Title"] = $"Tác giả {Model.FullName}";
+    var currentUserId = 0;
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out currentUserId);
+    }
+    var canFollow = User.Identity?.IsAuthenticated == true && Model.UserId != currentUserId;
+    var initial = !string.IsNullOrEmpty(Model.FullName) ? Model.FullName.Substring(0, 1).ToUpper() : "U";
+}
+
+<section class="auth-card" style="max-width:540px; margin:40px auto; text-align:center;">
+    <div class="row" style="justify-content:center; margin-bottom:12px;">
+        <span class="avatar" style="width:64px; height:64px; font-size:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:var(--teal); color:white; font-weight:700;">
+            @initial
+        </span>
+    </div>
+    <h1 style="margin:8px 0 4px 0;">@Model.FullName</h1>
+    <p class="muted" style="margin-bottom:20px;">
+        @Model.FollowerCount người theo dõi · Đang theo dõi @Model.FollowingCount
+    </p>
+
+    @if (canFollow)
+    {
+        var isFollowing = Model.IsFollowing == true;
+        <form asp-controller="Social" asp-action="Follow" method="post" style="display:inline;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="userId" value="@Model.UserId" />
+            <input type="hidden" name="unfollow" value="@(isFollowing ? "true" : "false")" />
+            <input type="hidden" name="returnUrl" value="/Social/UserProfile/@Model.UserId" />
+            <button class="@(isFollowing ? "btn-ghost" : "btn")" type="submit">
+                @(isFollowing ? "Bỏ theo dõi" : "Theo dõi tác giả")
+            </button>
+        </form>
+    }
+</section>

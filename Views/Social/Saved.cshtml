@@ -1,0 +1,62 @@
+@model SavedViewModel
+@{
+    ViewData["Title"] = "Bài đã lưu & Đang theo dõi";
+}
+
+<div class="tabs" style="display:flex; gap:8px; margin-bottom:20px;">
+    <a class="chip @(Model.Tab == "bookmarks" ? "on" : "")" asp-controller="Social" asp-action="Saved" asp-route-tab="bookmarks">
+        Bài review đã lưu
+    </a>
+    <a class="chip @(Model.Tab == "following" ? "on" : "")" asp-controller="Social" asp-action="Saved" asp-route-tab="following">
+        Đang theo dõi
+    </a>
+</div>
+
+@if (Model.Tab == "following")
+{
+    @if (Model.Following != null && Model.Following.Count > 0)
+    {
+        <div class="stack" style="gap:12px;">
+            @foreach (var person in Model.Following)
+            {
+                <article class="card pad row" style="justify-content:space-between; align-items:center;">
+                    <a asp-controller="Social" asp-action="UserProfile" asp-route-id="@person.UserId" style="text-decoration:none; color:inherit; font-weight:600; font-size:16px;">
+                        @person.FullName
+                    </a>
+                    <form asp-controller="Social" asp-action="Follow" method="post" style="display:inline;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="userId" value="@person.UserId" />
+                        <input type="hidden" name="unfollow" value="true" />
+                        <input type="hidden" name="returnUrl" value="/Social/Saved?tab=following" />
+                        <button class="btn-ghost" type="submit">Bỏ theo dõi</button>
+                    </form>
+                </article>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="panel empty pad" style="text-align:center; padding:36px;">
+            Bạn chưa theo dõi tác giả nào. Khi đọc bài review hay, bạn có thể bấm "Theo dõi" để cập nhật bài viết mới của họ!
+        </div>
+    }
+}
+else
+{
+    @if (Model.Bookmarks != null && Model.Bookmarks.Items.Count > 0)
+    {
+        <div class="stack" style="gap:16px;">
+            @foreach (var bookmark in Model.Bookmarks.Items)
+            {
+                <partial name="_ReviewCard" model="bookmark.Review" />
+            }
+        </div>
+        <partial name="_Pager" model="(Model.Bookmarks.Page, Model.Bookmarks.TotalPages)" />
+    }
+    else
+    {
+        <div class="panel empty pad" style="text-align:center; padding:36px;">
+            Bạn chưa lưu bài review nào. Khi tìm thấy bài đánh giá hữu ích, bấm nút "Lưu" để xem lại tại đây!
+        </div>
+    }
+}

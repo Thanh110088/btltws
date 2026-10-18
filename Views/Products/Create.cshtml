@@ -1,0 +1,63 @@
+@model UpsertProductRequest
+@{
+    ViewData["Title"] = "Thêm sản phẩm mới";
+    var categories = ViewBag.Categories as IReadOnlyList<CategoryDto> ?? Array.Empty<CategoryDto>();
+}
+
+<section class="auth-card" style="max-width:720px; margin:20px auto;">
+    <p class="kicker">Danh mục sản phẩm</p>
+    <h1>Thêm sản phẩm mới</h1>
+    <p class="muted">Nhập thông tin sản phẩm mới để cộng đồng có thể đánh giá và bóc tách hạn chế thực tế.</p>
+
+    <form class="form" asp-controller="Products" asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="panel" style="background:#fce8e6; color:#c5221f; padding:10px; margin-bottom:12px; border-radius:6px;"></div>
+
+        <label class="field">
+            <span>Tên sản phẩm</span>
+            <input asp-for="Name" required minlength="2" maxlength="200" placeholder="VD: Laptop Dell XPS 13" />
+            <span asp-validation-for="Name" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <label class="field">
+            <span>Thương hiệu</span>
+            <input asp-for="Brand" required maxlength="120" placeholder="VD: Dell, Apple, Sony..." />
+            <span asp-validation-for="Brand" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <label class="field">
+            <span>Ngành hàng</span>
+            <select asp-for="CategoryId" required>
+                <option value="">-- Chọn ngành hàng --</option>
+                @foreach (var cat in categories)
+                {
+                    <option value="@cat.Id">@cat.Name</option>
+                }
+            </select>
+            <span asp-validation-for="CategoryId" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <label class="field">
+            <span>Giá tham khảo (₫)</span>
+            <input asp-for="Price" type="number" min="0" step="1000" placeholder="0" />
+            <span asp-validation-for="Price" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <label class="field">
+            <span>Link ảnh sản phẩm (tùy chọn)</span>
+            <input asp-for="ImageUrl" placeholder="https://..." />
+            <span asp-validation-for="ImageUrl" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <label class="field">
+            <span>Mô tả ngắn gọn</span>
+            <textarea asp-for="Description" maxlength="4000" rows="3" placeholder="Đặc điểm chính, phiên bản, cấu hình..."></textarea>
+            <span asp-validation-for="Description" style="color:var(--flaw); font-size:12px;"></span>
+        </label>
+
+        <div class="row" style="margin-top:16px; gap:10px;">
+            <button class="btn" type="submit">Tạo sản phẩm & Viết đánh giá</button>
+            <a class="btn-ghost" asp-controller="Products" asp-action="Index">Hủy</a>
+        </div>
+    </form>
+</section>
