@@ -1,3 +1,5 @@
+using FlawFirst.Api.Common;
+
 namespace FlawFirst.Api.Controllers;
 
 [Route("[controller]")]
@@ -77,14 +79,34 @@ public class SocialController : Controller
 
     [Authorize]
     [HttpPost("Comment")]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Comment(int reviewId, CreateCommentRequest request, string? returnUrl = null, CancellationToken cancellationToken = default)
     {
-        if (ModelState.IsValid)
+        if (!ModelState.IsValid)
         {
-            await _social.AddCommentAsync(reviewId, User.GetUserId(), request, cancellationToken);
-            TempData["Success"] = "Đã gửi bình luận!";
+            if (IsAjax())
+                return BadRequest(ModelState);
+            TempData["Error"] = "Vui lòng nhập nội dung bình luận.";
+            return Redirect(returnUrl ?? "/");
         }
+
+        var comment = await _social.AddCommentAsync(reviewId, User.GetUserId(), request, cancellationToken);
+        if (IsAjax())
+            return Json(new { success = true, comment });
+
+        TempData["Success"] = "Đã gửi bình luận!";
+        return Redirect(returnUrl ?? "/");
+    }
+
+    [Authorize]
+    [HttpPost("DeleteComment/{id:int}")]
+    public async Task<IActionResult> DeleteComment(int id, string? returnUrl = null, CancellationToken cancellationToken = default)
+    {
+        var isAdmin = User.IsInRole(AppRoles.Admin);
+        await _social.DeleteCommentAsync(id, User.GetUserId(), isAdmin, cancellationToken);
+        if (IsAjax())
+            return Json(new { success = true, id });
+
+        TempData["Success"] = "Đã xóa bình luận!";
         return Redirect(returnUrl ?? "/");
     }
 

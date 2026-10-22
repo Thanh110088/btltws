@@ -47,6 +47,9 @@ public class ReviewDto
     public int Id { get; set; }
     public int ProductId { get; set; }
     public string? ProductName { get; set; }
+    public decimal? ProductPrice { get; set; }
+    public string? CategoryName { get; set; }
+    public string? ProductImageUrl { get; set; }
     public int Rating { get; set; }
     public string Pros { get; set; } = string.Empty;
     public string Cons { get; set; } = string.Empty;

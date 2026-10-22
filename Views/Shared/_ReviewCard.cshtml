@@ -1,4 +1,4 @@
-@model ReviewDto
+﻿@model ReviewDto
 @{
     var currentUserId = 0;
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
@@ -9,30 +9,40 @@
     var isAuthor = isAuthenticated && Model.AuthorId.HasValue && Model.AuthorId.Value == currentUserId;
     var isAdmin = User.IsInRole(AppRoles.Admin);
     var shareUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/Products/Details/{Model.ProductId}#review-{Model.Id}";
+    var authorInitial = !string.IsNullOrEmpty(Model.AuthorName) ? Model.AuthorName.Substring(0, 1).ToUpper() : "R";
 }
 
-<article class="review card" id="review-@Model.Id" style="padding:18px; margin-bottom:16px;">
-    <div class="review-top row" style="justify-content:space-between; align-items:center;">
-        <div class="row" style="gap:10px; align-items:center;">
-            <span class="stars" aria-label="@Model.Rating trên 5 sao">
-                @for (int i = 1; i <= 5; i++)
-                {
-                    <svg class="star @(i <= Model.Rating ? "on" : "")" viewBox="0 0 20 20" aria-hidden="true">
-                        <path d="M10 1.8 12.4 7l5.6.5-4.2 3.7 1.3 5.5L10 14.2 4.9 16.7 6.2 11.2 2 7.5 7.6 7z" />
-                    </svg>
-                }
+<article class="card" id="review-@Model.Id" style="padding:20px; margin-bottom:16px;">
+    <div class="row-between" style="margin-bottom:12px;">
+        <div class="row" style="gap:10px;">
+            <span class="rc-avatar" style="width:32px; height:32px; font-size:12px; background:#fed7aa; color:#ea580c;">
+                @authorInitial
             </span>
 
-            @if (Model.AuthorId.HasValue && !Model.IsAnonymous)
-            {
-                <a class="who" asp-controller="Social" asp-action="UserProfile" asp-route-id="@Model.AuthorId.Value" style="font-weight:600; color:inherit; text-decoration:none;">
-                    @Model.AuthorName
-                </a>
-            }
-            else
-            {
-                <span class="who" style="font-weight:600;">@Model.AuthorName</span>
-            }
+            <div>
+                @if (Model.AuthorId.HasValue && !Model.IsAnonymous)
+                {
+                    <a class="who" asp-controller="Social" asp-action="UserProfile" asp-route-id="@Model.AuthorId.Value" style="font-size:14px; font-weight:700;">
+                        @Model.AuthorName
+                    </a>
+                }
+                else
+                {
+                    <span class="who" style="font-size:14px; font-weight:700;">@Model.AuthorName</span>
+                }
+
+                <div class="row" style="gap:6px; margin-top:2px;">
+                    <span class="stars" aria-label="@Model.Rating trên 5 sao" style="display:inline-flex; gap:2px;">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <svg class="star @(i <= Model.Rating ? "on" : "")" style="width:14px; height:14px; fill:@(i <= Model.Rating ? "#f59e0b" : "#cbd5e1");" viewBox="0 0 20 20">
+                                <path d="M10 1.8 12.4 7l5.6.5-4.2 3.7 1.3 5.5L10 14.2 4.9 16.7 6.2 11.2 2 7.5 7.6 7z" />
+                            </svg>
+                        }
+                    </span>
+                    <span class="muted text-xs">• @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+            </div>
 
             @if (Model.IsAnonymous)
             {
@@ -40,70 +50,117 @@
             }
             @if (Model.IsHidden)
             {
-                <span class="badge warn">Đã bị ẩn</span>
+                <span class="badge badge-pending">Đã bị ẩn</span>
             }
         </div>
-        <span class="muted" style="font-size:13px;">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.ProductName))
     {
-        <p class="muted" style="margin:6px 0 0; font-size:13px;">
-            Sản phẩm: <a asp-controller="Products" asp-action="Details" asp-route-id="@Model.ProductId" style="color:inherit; font-weight:500;">@Model.ProductName</a>
+        <p class="muted" style="margin:0 0 12px 0; font-size:13px;">
+            Sản phẩm: <a asp-controller="Products" asp-action="Details" asp-route-id="@Model.ProductId" style="color:var(--ink); font-weight:700;">@Model.ProductName</a>
         </p>
     }
 
-    <div class="split" style="margin-top:12px;">
-        <div class="box pros">
-            <h4>Điểm hài lòng (Pros)</h4>
-            <p>@Model.Pros</p>
+    <!-- Side-by-side Pros & Cons inside review card -->
+    <div class="pros-cons-grid" style="margin: 10px 0;">
+        <div class="pc-box pros" style="padding:12px 14px;">
+            <div class="pc-header" style="font-size:12px; margin-bottom:4px;">
+                <span>✔ Điểm hài lòng (Pros)</span>
+            </div>
+            <p style="margin:0; font-size:13px; line-height:1.5; color:var(--text);">@Model.Pros</p>
         </div>
-        <div class="box cons">
-            <h4>Hạn chế thực tế (Cons)</h4>
-            <p>@Model.Cons</p>
+
+        <div class="pc-box cons" style="padding:12px 14px;">
+            <div class="pc-header" style="font-size:12px; margin-bottom:4px;">
+                <span>✖ Hạn chế thực tế (Cons)</span>
+            </div>
+            <p style="margin:0; font-size:13px; line-height:1.5; color:var(--text);">@Model.Cons</p>
         </div>
     </div>
 
     @if (Model.ImageUrls != null && Model.ImageUrls.Count > 0)
     {
-        <div class="thumbs" style="margin-top:12px;">
+        <div class="row" style="gap:10px; margin: 12px 0; flex-wrap:wrap;">
             @foreach (var img in Model.ImageUrls)
             {
                 <a href="@img" target="_blank" rel="noopener noreferrer">
-                    <img src="@img" alt="Ảnh minh chứng" style="max-height:90px; border-radius:6px; object-fit:cover;" />
+                    <img src="@img" alt="Ảnh minh chứng" style="width:84px; height:84px; border-radius:8px; object-fit:cover; border:1px solid var(--border);" />
                 </a>
             }
         </div>
     }
 
-    <div class="actions row" style="margin-top:14px; gap:8px; flex-wrap:wrap; align-items:center;">
-        <button type="button" class="btn-soft" onclick="handleVote(@Model.Id, 'Up', this)" style="font-size:13px; padding:6px 12px;">
+    <!-- Actions Row -->
+    <div class="row" style="margin-top:14px; gap:8px; flex-wrap:wrap; align-items:center; border-top:1px solid var(--border-light); padding-top:12px;">
+        <button type="button" class="btn-ghost btn-sm" onclick="handleVote(@Model.Id, 'Up', this)">
             👍 Hữu ích <span data-up="@Model.Id" style="font-weight:bold; margin-left:4px;">@Model.UpvoteCount</span>
         </button>
-        <button type="button" class="btn-soft" onclick="handleVote(@Model.Id, 'Down', this)" style="font-size:13px; padding:6px 12px;">
+        <button type="button" class="btn-ghost btn-sm" onclick="handleVote(@Model.Id, 'Down', this)">
             👎 Không <span data-down="@Model.Id" style="font-weight:bold; margin-left:4px;">@Model.DownvoteCount</span>
         </button>
-        <button type="button" class="btn-soft" onclick="toggleComments(@Model.Id, this)" style="font-size:13px; padding:6px 12px;">
-            💬 Bình luận <span style="font-weight:bold; margin-left:4px;">@Model.CommentCount</span>
+        <button type="button" class="btn-ghost btn-sm btn-comment-toggle" id="btn-toggle-comment-@Model.Id" onclick="toggleComments(@Model.Id, this)">
+            💬 Bình luận <span id="comment-count-@Model.Id" style="font-weight:bold; margin-left:4px;">@Model.CommentCount</span>
         </button>
-        <button type="button" class="btn-soft" onclick="handleBookmark(@Model.Id, this)" style="font-size:13px; padding:6px 12px;">
+        <button type="button" class="btn-ghost btn-sm" onclick="handleBookmark(@Model.Id, this)">
             🔖 Lưu
         </button>
-        <button type="button" class="btn-soft" onclick="copyShareLink('@shareUrl')" style="font-size:13px; padding:6px 12px;">
+        <button type="button" class="btn-ghost btn-sm" onclick="copyShareLink('@shareUrl')">
             🔗 Chia sẻ
-        </button>
-        <button type="button" class="btn-soft" onclick="openReportModal(@Model.Id)" style="font-size:13px; padding:6px 12px;">
-            🚩 Báo cáo
         </button>
 
         @if (isAuthor || isAdmin)
         {
             <div class="row" style="margin-left:auto; gap:6px;">
-                <a class="btn-soft" asp-controller="Reviews" asp-action="Edit" asp-route-id="@Model.Id" style="font-size:13px; padding:6px 12px; text-decoration:none;">Sửa</a>
+                <a class="btn-ghost btn-sm" asp-controller="Reviews" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a>
                 <form asp-controller="Reviews" asp-action="Delete" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài review này?');" style="display:inline;">
                     @Html.AntiForgeryToken()
-                    <button class="btn-danger" type="submit" style="font-size:13px; padding:6px 12px;">Xóa</button>
+                    <button class="btn-danger btn-sm" type="submit">Xóa</button>
                 </form>
+            </div>
+        }
+    </div>
+
+    <!-- Collapsible Comments Drawer -->
+    <div id="comments-box-@Model.Id" class="review-comments-box" style="display:none; margin-top:14px; padding-top:14px; border-top:1px dashed var(--border-light);">
+        <div class="row-between" style="margin-bottom:12px; align-items:center;">
+            <h4 style="margin:0; font-size:14px; font-weight:700; color:var(--ink);">
+                💬 Bình luận thảo luận (<span id="comment-heading-count-@Model.Id">@Model.CommentCount</span>)
+            </h4>
+            <button type="button" class="comment-delete-btn" onclick="toggleComments(@Model.Id, document.getElementById('btn-toggle-comment-@Model.Id'))" style="font-size:12px;">
+                Thu gọn ✕
+            </button>
+        </div>
+
+        <!-- Dynamic Comments List Container -->
+        <div id="comments-list-@Model.Id" class="comments-list">
+            <!-- Dynamic comments stream will be rendered here via loadComments(@Model.Id) -->
+        </div>
+
+        <!-- Add Comment Form -->
+        @if (isAuthenticated)
+        {
+            <form id="comment-form-@Model.Id" onsubmit="submitComment(event, @Model.Id)" class="comment-form" style="margin-top:14px;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="reviewId" value="@Model.Id" />
+                <textarea id="comment-input-@Model.Id" name="Content" class="comment-textarea" rows="2" placeholder="Thảo luận, chia sẻ ý kiến hoặc đặt câu hỏi về bài review này..." required></textarea>
+                <div class="row-between" style="align-items:center; flex-wrap:wrap; gap:8px;">
+                    <label style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); cursor:pointer; user-select:none;">
+                        <input type="checkbox" id="comment-anon-@Model.Id" name="IsAnonymous" value="true" />
+                        <span>Bình luận ẩn danh</span>
+                    </label>
+                    <button type="submit" id="comment-submit-@Model.Id" class="btn btn-sm" style="padding:6px 18px; font-size:13px;">
+                        Gửi bình luận
+                    </button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <div style="background:var(--surface); border:1px dashed var(--border); border-radius:var(--radius-sm); padding:12px; text-align:center; font-size:13px; color:var(--muted); margin-top:12px;">
+                <span>Bạn cần </span>
+                <a href="/Auth/Login?returnUrl=@(Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString))" style="color:var(--primary); font-weight:700;">đăng nhập</a>
+                <span> để tham gia gửi bình luận.</span>
             </div>
         }
     </div>

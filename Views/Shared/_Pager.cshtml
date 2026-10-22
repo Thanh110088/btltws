@@ -1,4 +1,4 @@
-@model (int Page, int TotalPages)
+﻿@model (int Page, int TotalPages)
 @{
     if (Model.TotalPages <= 1) return;
     var query = Context.Request.Query.ToDictionary(k => k.Key, v => (string?)v.Value.ToString());

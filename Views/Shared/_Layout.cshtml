@@ -1,84 +1,242 @@
+﻿@inject FlawFirst.Api.Services.IProductCatalogService Catalog
+@{
+    var layoutStats = await Catalog.GetPlatformStatsAsync(Context.RequestAborted);
+    var layoutCategories = await Catalog.GetCategoriesAsync(Context.RequestAborted);
+    var currentUserId = 0;
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    if (isAuthenticated)
+    {
+        int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out currentUserId);
+    }
+    var isAdmin = User.IsInRole(AppRoles.Admin);
+}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} — " : "")FlawFirst — Đánh giá bóc tách ưu và nhược điểm</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect rx='8' width='32' height='32' fill='%230E7C74'/%3E%3Cpath d='M8 16.5 13 21.5 24 10.5' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} — " : "")ReviewNow — Nền tảng đánh giá tiêu dùng minh bạch</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect rx='8' width='32' height='32' fill='%23ea580c'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-weight='900' font-size='18' fill='white'%3ER%3C/text%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/css/app.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <header class="topbar">
-        <a class="brand" asp-controller="Products" asp-action="Index">
-            <span class="mark" aria-hidden="true"></span>
-            <span>FlawFirst</span>
-        </a>
-        <form class="search" asp-controller="Products" asp-action="Index" method="get">
-            <input name="keyword" type="search" placeholder="Tìm sản phẩm, thương hiệu, ngành hàng" aria-label="Tìm kiếm" value="@(Context.Request.Query["keyword"])" />
-            <button type="submit">Tìm</button>
-        </form>
-        <nav class="nav" id="nav">
-            <a class="btn-ghost" asp-controller="Products" asp-action="Index">Khám phá</a>
-            <a class="btn" asp-controller="Reviews" asp-action="Create">Viết đánh giá</a>
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <a class="btn-ghost" asp-controller="Reviews" asp-action="Mine">Bài của tôi</a>
-                <a class="btn-ghost" asp-controller="Social" asp-action="Saved">Đã lưu</a>
-                @if (User.IsInRole(AppRoles.Admin))
-                {
-                    <a class="btn-ghost" asp-controller="Admin" asp-action="Index">Quản trị</a>
-                }
-                <div class="row" style="gap:8px; align-items:center;">
-                    @{
-                        var initial = "U";
-                        var nameClaim = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value;
-                        if (!string.IsNullOrEmpty(nameClaim))
-                        {
-                            initial = nameClaim.Substring(0, 1).ToUpper();
-                        }
-                    }
-                    <span class="avatar" title="@nameClaim">@initial</span>
-                    <a class="btn-ghost" asp-controller="Auth" asp-action="Logout" style="padding:6px 12px;font-size:13px;">Đăng xuất</a>
+    <!-- Top Vibrant Gradient Header -->
+    <header class="site-header" style="background: linear-gradient(100deg, #9333ea 0%, #db2777 25%, #f97316 65%, #ea580c 100%);">
+        <!-- Top Utility Strip -->
+        <div class="top-strip">
+            <div class="top-strip-inner">
+                <!-- Social & Welcome -->
+                <div class="top-left">
+                    <div class="social-links">
+                        <a href="https://facebook.com" target="_blank" rel="noopener" class="social-btn" title="Facebook">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        </a>
+                        <a href="https://twitter.com" target="_blank" rel="noopener" class="social-btn" title="Twitter / X">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </a>
+                        <a href="https://youtube.com" target="_blank" rel="noopener" class="social-btn" title="YouTube">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        </a>
+                        <a href="https://instagram.com" target="_blank" rel="noopener" class="social-btn" title="Instagram">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                        </a>
+                    </div>
+                    <span class="welcome-msg">Chào mừng bạn đến với ReviewNow</span>
                 </div>
-            }
-            else
-            {
-                <a class="btn-ghost" asp-controller="Auth" asp-action="Login">Đăng nhập</a>
-                <a class="btn" asp-controller="Auth" asp-action="Register">Đăng ký</a>
-            }
-        </nav>
+
+                <!-- Center Logo -->
+                <a class="brand-center" asp-controller="Products" asp-action="Index">
+                    <span class="brand-badge">R</span>
+                    <div class="brand-titles">
+                        <span class="brand-name">ReviewNow</span>
+                        <span class="brand-tagline">CÙNG BẠN TIẾT KIỆM</span>
+                    </div>
+                </a>
+
+                <!-- Right Quick Utilities -->
+                <div class="top-right">
+                    <a class="save-link" asp-controller="Social" asp-action="Saved" title="Xem bài đã lưu">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        <span>Đã lưu (0)</span>
+                    </a>
+
+                    <form class="top-search" asp-controller="Products" asp-action="Index" method="get">
+                        <input name="keyword" type="search" placeholder="Tìm kiếm sản phẩm..." value="@(Context.Request.Query["keyword"])" aria-label="Tìm kiếm sản phẩm" />
+                        <button type="submit" aria-label="Tìm kiếm">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </button>
+                    </form>
+
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        var nameClaim = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value ?? "U";
+                        var initial = nameClaim.Substring(0, 1).ToUpper();
+                        if (isAdmin)
+                        {
+                            <a class="btn-ghost" asp-controller="Admin" asp-action="Index" style="padding:4px 12px; font-size:12px; font-weight:700; border-radius:999px; background:rgba(254,240,138,0.25); color:#fef08a; border:1px solid rgba(254,240,138,0.5); display:inline-flex; align-items:center; gap:4px;" title="Vào trang quản trị hệ thống">
+                                <span>⚡ Quản trị</span>
+                            </a>
+                        }
+                        <a class="user-profile-btn" asp-controller="Reviews" asp-action="Mine" title="@nameClaim (Quản lý bài viết)">
+                            <span>@initial</span>
+                        </a>
+                        <a class="btn-ghost" asp-controller="Auth" asp-action="Logout" style="padding:4px 10px; font-size:12px; border-radius:999px; background:rgba(255,255,255,0.2); color:white; border:0;">Đăng xuất</a>
+                    }
+                    else
+                    {
+                        <a class="user-profile-btn" asp-controller="Auth" asp-action="Login" title="Đăng nhập">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Card in Header -->
+        <div class="header-hero-wrap">
+            <div class="hero-banner-card">
+                <div class="hero-banner-content">
+                    <span class="hero-tag">NỀN TẢNG ĐÁNH GIÁ TIÊU DÙNG MINH BẠCH</span>
+                    <h1 class="hero-title">Trải Nghiệm Thực Tế – Lựa Chọn Thông Minh</h1>
+                    <p class="hero-sub">Tham khảo những góc nhìn khách quan, đa chiều từ cộng đồng người dùng trước khi đưa ra quyết định mua sắm.</p>
+                    <div class="hero-stats-row">
+                        <span><strong>@layoutStats.TotalReviews</strong> bài đánh giá</span>
+                        <span class="hero-stats-dot">•</span>
+                        <span><strong>@layoutStats.TotalMembers</strong> thành viên</span>
+                    </div>
+                </div>
+                <a class="hero-featured-btn" asp-controller="Products" asp-action="Index" asp-route-sort="mostReviewed">
+                    <span>Bài viết nổi bật</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Category Nav Bar -->
+        <div class="category-navbar">
+            <div class="nav-pills">
+                @{
+                    var currentPath = Context.Request.Path.Value ?? "/";
+                    var currentCatId = Context.Request.Query["categoryId"].ToString();
+                    var isHome = string.IsNullOrEmpty(currentCatId) && (currentPath == "/" || currentPath.Equals("/Products", StringComparison.OrdinalIgnoreCase) || currentPath.Equals("/Products/Index", StringComparison.OrdinalIgnoreCase));
+                }
+                <a class="nav-pill @(isHome && !Context.Request.Query.ContainsKey("keyword") ? "active" : "")" asp-controller="Products" asp-action="Index">Tất cả</a>
+                @foreach (var cat in layoutCategories)
+                {
+                    var isActive = currentCatId == cat.Id.ToString();
+                    <a class="nav-pill @(isActive ? "active" : "")" asp-controller="Products" asp-action="Index" asp-route-categoryId="@cat.Id">@cat.Name</a>
+                }
+            </div>
+
+            <a class="nav-write-btn" asp-controller="Reviews" asp-action="Create">
+                <span>+ Viết Đánh Giá</span>
+            </a>
+        </div>
     </header>
 
+    <!-- Main Content Body -->
     <main id="main" class="wrap">
         @if (TempData["Success"] != null)
         {
-            <div class="panel" style="background:#e6f4ea; border-left:4px solid #137333; padding:12px 16px; margin-bottom:20px; border-radius:6px; color:#137333; font-weight:500;">
-                ✓ @TempData["Success"]
+            <div class="panel" style="background:#f0fdf4; border-left:4px solid #16a34a; padding:12px 18px; margin-bottom:20px; border-radius:10px; color:#15803d; font-weight:600; display:flex; align-items:center; gap:8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>@TempData["Success"]</span>
             </div>
         }
         @if (TempData["Error"] != null)
         {
-            <div class="panel" style="background:#fce8e6; border-left:4px solid #c5221f; padding:12px 16px; margin-bottom:20px; border-radius:6px; color:#c5221f; font-weight:500;">
-                ✕ @TempData["Error"]
+            <div class="panel" style="background:#fef2f2; border-left:4px solid #dc2626; padding:12px 18px; margin-bottom:20px; border-radius:10px; color:#b91c1c; font-weight:600; display:flex; align-items:center; gap:8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <span>@TempData["Error"]</span>
             </div>
         }
         @if (TempData["Info"] != null)
         {
-            <div class="panel" style="background:#e8f0fe; border-left:4px solid #1a73e8; padding:12px 16px; margin-bottom:20px; border-radius:6px; color:#1a73e8; font-weight:500;">
-                ℹ @TempData["Info"]
+            <div class="panel" style="background:#f0f9ff; border-left:4px solid #0284c7; padding:12px 18px; margin-bottom:20px; border-radius:10px; color:#0369a1; font-weight:600; display:flex; align-items:center; gap:8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>@TempData["Info"]</span>
             </div>
         }
 
         @RenderBody()
     </main>
 
-    <footer class="footer">
-        <span>FlawFirst — ưu điểm và hạn chế thực tế, tách riêng.</span>
-        <span>Mô hình ASP.NET Core MVC (Razor .cshtml)</span>
+    <!-- 4-Column Footer -->
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <!-- Brand Column -->
+            <div class="footer-brand-col">
+                <div class="footer-brand">
+                    <span class="footer-badge">R</span>
+                    <span>ReviewNow</span>
+                </div>
+                <p class="footer-desc">
+                    ReviewNow là mạng xã hội uy tín, chuyên xuất bản các bài đánh giá và nghiên cứu sản phẩm độc lập, khoa học về công nghệ, ẩm thực, làm đẹp và đời sống từ năm 2026. Với sứ mệnh đánh giá khách quan, chúng tôi giúp bạn tiết kiệm thời gian và loại bỏ căng thẳng khi mua sắm.
+                </p>
+                <div class="footer-social-row">
+                    <a href="https://facebook.com" class="footer-social-icon" title="Facebook">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    </a>
+                    <a href="https://twitter.com" class="footer-social-icon" title="Twitter / X">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                    <a href="https://instagram.com" class="footer-social-icon" title="Instagram">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                    </a>
+                    <a href="https://youtube.com" class="footer-social-icon" title="YouTube">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Col 2: Làm đẹp & Sức khỏe -->
+            <div class="footer-col">
+                <h4>LÀM ĐẸP & SỨC KHỎE</h4>
+                <ul>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-categoryId="3">Chăm sóc da (Skincare)</a></li>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-categoryId="3">Trang điểm (Make Up)</a></li>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-categoryId="3">Chăm sóc tóc & Da đầu</a></li>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-categoryId="3">Mỹ phẩm dành cho nam</a></li>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-categoryId="3">Kem dưỡng ẩm chuyên sâu</a></li>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-categoryId="3">Son môi & Mỹ phẩm cao cấp</a></li>
+                </ul>
+            </div>
+
+            <!-- Col 3: Công nghệ & Đời sống -->
+            <div class="footer-col">
+                <h4>CÔNG NGHỆ & ĐỜI SỐNG</h4>
+                <ul>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-categoryId="1">Điện thoại & Thiết bị thông minh</a></li>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-categoryId="2">Laptop & Phụ kiện công nghệ</a></li>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-keyword="cafe">Ẩm thực, Quán cafe & Trà sữa</a></li>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-keyword="du lịch">Du lịch, Khách sạn & Homestay</a></li>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-categoryId="4">Đồ gia dụng & Thiết bị nhà bếp</a></li>
+                    <li><a asp-controller="Products" asp-action="Index" asp-route-sort="mostReviewed">Top thương hiệu HOT 2026</a></li>
+                </ul>
+            </div>
+
+            <!-- Col 4: Về ReviewNow -->
+            <div class="footer-col">
+                <h4>VỀ REVIEWNOW</h4>
+                <ul>
+                    <li><a href="#">Giới thiệu về ReviewNow</a></li>
+                    <li><a href="#">Liên hệ ban biên tập</a></li>
+                    <li><a href="#">Quy chế hoạt động cộng đồng</a></li>
+                    <li><a href="#">Chính sách bảo mật thông tin</a></li>
+                    <li><a href="#">Điều khoản sử dụng dịch vụ</a></li>
+                    <li><a href="#">Sơ đồ trang web (Sitemap)</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <span>© 2026 ReviewNow — Bản quyền thuộc về cộng đồng ReviewNow Việt Nam.</span>
+            <span>Mô hình ASP.NET Core MVC (Razor .cshtml) — Tiêu chí đánh giá thực tế bóc tách Pros & Cons.</span>
+        </div>
     </footer>
 
     <!-- Global Toast & Modal Container -->
@@ -86,7 +244,6 @@
     <div id="modal" hidden></div>
 
     <script>
-        // Shared interactive scripts for Razor Views (AJAX progressive enhancement)
         function showToast(message) {
             const toast = document.getElementById("toast");
             if (!toast) return;
@@ -135,7 +292,7 @@
                     return;
                 }
                 const data = await response.json();
-                const card = button.closest(".card") || button.closest("article");
+                const card = button.closest(".card") || button.closest("article") || button.closest(".review-item-horizontal");
                 if (card) {
                     const upEl = card.querySelector(`[data-up="${reviewId}"]`);
                     const downEl = card.querySelector(`[data-down="${reviewId}"]`);
@@ -186,87 +343,244 @@
             });
         }
 
-        function openReportModal(reviewId) {
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
-            const html = `
-                <h3>Báo cáo bài review</h3>
-                <form class="form" action="/Social/Report" method="post" enctype="multipart/form-data">
-                    <input type="hidden" name="__RequestVerificationToken" value="${token}" />
-                    <input type="hidden" name="reviewId" value="${reviewId}" />
-                    <input type="hidden" name="returnUrl" value="${window.location.pathname}" />
-                    <label class="field">
-                        <span>Lý do vi phạm</span>
-                        <textarea name="reason" required minlength="10" placeholder="Mô tả lý do bài viết này vi phạm quy định (tối thiểu 10 ký tự)"></textarea>
-                    </label>
-                    <label class="field">
-                        <span>Ảnh bằng chứng (tùy chọn)</span>
-                        <input name="files" type="file" accept="image/*" multiple />
-                    </label>
-                    <div class="row" style="margin-top:12px; gap:8px;">
-                        <button class="btn" type="submit">Gửi báo cáo</button>
-                        <button class="btn-ghost" type="button" data-action="close-modal">Hủy</button>
-                    </div>
-                </form>
-            `;
-            openModal(html);
+        /* ----------------------------------------------------------------------
+           COMMENTING SYSTEM CLIENT LOGIC
+           ---------------------------------------------------------------------- */
+        window.__currentUserId = @currentUserId;
+        window.__isAdmin = @(isAdmin ? "true" : "false");
+        window.__isAuthenticated = @(isAuthenticated ? "true" : "false");
+
+        const loadedComments = {};
+
+        async function toggleComments(reviewId, btn) {
+            const box = document.getElementById(`comments-box-${reviewId}`);
+            if (!box) return;
+
+            const isHidden = box.style.display === "none" || !box.style.display;
+            if (isHidden) {
+                box.style.display = "block";
+                if (btn) btn.classList.add("active");
+                if (!loadedComments[reviewId]) {
+                    await loadComments(reviewId);
+                }
+            } else {
+                box.style.display = "none";
+                if (btn) btn.classList.remove("active");
+            }
         }
 
-        async function toggleComments(reviewId, button) {
-            const card = button.closest(".card") || button.closest("article");
-            let box = card.querySelector(`.comments-box[data-for="${reviewId}"]`);
-            if (box) {
-                box.hidden = !box.hidden;
-                return;
-            }
+        async function loadComments(reviewId) {
+            const list = document.getElementById(`comments-list-${reviewId}`);
+            if (!list) return;
 
-            box = document.createElement("div");
-            box.className = "comments-box";
-            box.dataset.for = reviewId;
-            box.innerHTML = `<div class="loading" style="padding:12px 0;">Đang tải bình luận...</div>`;
-            card.appendChild(box);
+            list.innerHTML = `<div class="muted text-xs" style="padding:12px 0; text-align:center;">Đang tải bình luận...</div>`;
 
             try {
                 const res = await fetch(`/Social/Comments/${reviewId}`);
+                if (!res.ok) throw new Error("Không thể tải bình luận");
                 const data = await res.json();
-                const comments = data.items || [];
-                const commentsListHtml = comments.length
-                    ? comments.map(c => `
-                        <div class="comment-item" style="border-top:1px solid var(--border); padding:8px 0; font-size:14px;">
-                            <div class="row" style="justify-content:space-between; margin-bottom:4px;">
-                                <strong>${c.isAnonymous ? "Người dùng ẩn danh" : (c.authorName || "Thành viên")}</strong>
-                                <span class="muted" style="font-size:12px;">${new Date(c.createdAt).toLocaleDateString("vi-VN")}</span>
-                            </div>
-                            <p style="margin:0;">${c.content}</p>
-                        </div>
-                    `).join("")
-                    : `<p class="muted" style="font-size:14px;">Chưa có bình luận nào.</p>`;
+                loadedComments[reviewId] = true;
 
-                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
-                box.innerHTML = `
-                    <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
-                        <h4 style="margin:0 0 10px 0;">Bình luận (${data.totalItems || comments.length})</h4>
-                        <div class="comments-list" style="margin-bottom:12px;">${commentsListHtml}</div>
-                        <form class="form" action="/Social/Comment" method="post">
-                            <input type="hidden" name="__RequestVerificationToken" value="${token}" />
-                            <input type="hidden" name="reviewId" value="${reviewId}" />
-                            <input type="hidden" name="returnUrl" value="${window.location.pathname}" />
-                            <label class="field" style="margin-bottom:8px;">
-                                <textarea name="content" required minlength="1" maxlength="2000" rows="2" placeholder="Viết bình luận của bạn..."></textarea>
-                            </label>
-                            <div class="row" style="justify-content:space-between; align-items:center;">
-                                <label class="row" style="gap:6px; font-size:13px; align-items:center;">
-                                    <input type="checkbox" name="isAnonymous" value="true" /> Bình luận ẩn danh
-                                </label>
-                                <button class="btn" type="submit" style="padding:6px 14px; font-size:13px;">Gửi</button>
-                            </div>
-                        </form>
-                    </div>
-                `;
+                renderCommentList(reviewId, data.items || []);
             } catch (err) {
-                box.innerHTML = `<p class="muted">Không tải được bình luận.</p>`;
+                list.innerHTML = `<div class="text-xs" style="color:var(--cons); padding:10px 0; text-align:center;">Không thể tải bình luận. Vui lòng thử lại sau.</div>`;
             }
         }
+
+        function renderCommentList(reviewId, items) {
+            const list = document.getElementById(`comments-list-${reviewId}`);
+            if (!list) return;
+
+            if (!items || items.length === 0) {
+                list.innerHTML = `<div class="muted text-xs" style="padding:14px 0; text-align:center;">Chưa có bình luận nào. Hãy là người đầu tiên thảo luận về bài review này!</div>`;
+                return;
+            }
+
+            list.innerHTML = items.map(c => renderCommentItem(c)).join("");
+        }
+
+        function renderCommentItem(c) {
+            const authorName = escapeHtml(c.authorName || "Người dùng");
+            const initial = authorName.charAt(0).toUpperCase();
+            const dateStr = formatDateTime(c.createdAt);
+            const content = escapeHtml(c.content || "");
+            const isAnon = c.isAnonymous;
+            const authorLink = (!isAnon && c.authorId)
+                ? `<a href="/Social/UserProfile/${c.authorId}" class="comment-author">${authorName}</a>`
+                : `<span class="comment-author">${authorName}</span>`;
+
+            const canDelete = (window.__isAuthenticated && window.__currentUserId && c.authorId === window.__currentUserId) || window.__isAdmin;
+            const deleteBtn = canDelete ? `<button type="button" class="comment-delete-btn" onclick="handleDeleteComment(${c.id}, ${c.reviewId}, this)" title="Xóa bình luận">✕ Xóa</button>` : '';
+
+            return `
+                <div class="comment-item" id="comment-item-${c.id}">
+                    <span class="comment-avatar">
+                        ${initial}
+                    </span>
+                    <div class="comment-body">
+                        <div class="comment-header">
+                            ${authorLink}
+                            ${isAnon ? '<span class="badge" style="font-size:10px; padding:1px 6px;">Ẩn danh</span>' : ''}
+                            <span class="comment-time">• ${dateStr}</span>
+                            ${deleteBtn}
+                        </div>
+                        <div class="comment-content">${content}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function handleDeleteComment(commentId, reviewId, btn) {
+            if (!confirm("Bạn có chắc chắn muốn xóa bình luận này?")) return;
+
+            try {
+                const res = await fetch(`/Social/DeleteComment/${commentId}`, {
+                    method: "POST",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                });
+
+                if (res.status === 401) {
+                    window.location.href = `/Auth/Login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
+                    return;
+                }
+
+                const data = await res.json();
+                if (data.success) {
+                    const itemEl = document.getElementById(`comment-item-${commentId}`);
+                    if (itemEl) itemEl.remove();
+
+                    // Decrement badge count
+                    const countEl = document.getElementById(`comment-count-${reviewId}`);
+                    if (countEl) {
+                        const cur = Math.max(0, (parseInt(countEl.textContent, 10) || 0) - 1);
+                        countEl.textContent = cur;
+                    }
+                    const headingCountEl = document.getElementById(`comment-heading-count-${reviewId}`);
+                    if (headingCountEl) {
+                        const cur = Math.max(0, (parseInt(headingCountEl.textContent, 10) || 0) - 1);
+                        headingCountEl.textContent = cur;
+                    }
+
+                    const list = document.getElementById(`comments-list-${reviewId}`);
+                    if (list && list.children.length === 0) {
+                        list.innerHTML = `<div class="muted text-xs" style="padding:14px 0; text-align:center;">Chưa có bình luận nào. Hãy là người đầu tiên thảo luận về bài review này!</div>`;
+                    }
+
+                    showToast("Đã xóa bình luận!");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Không thể xóa bình luận. Vui lòng thử lại!");
+            }
+        }
+
+        async function submitComment(event, reviewId) {
+            event.preventDefault();
+            const form = event.target;
+            const input = document.getElementById(`comment-input-${reviewId}`);
+            const anonInput = document.getElementById(`comment-anon-${reviewId}`);
+            const submitBtn = document.getElementById(`comment-submit-${reviewId}`);
+            if (!input || !input.value.trim()) return;
+
+            const content = input.value.trim();
+            const isAnonymous = anonInput ? anonInput.checked : false;
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Đang gửi...";
+            }
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append("reviewId", reviewId);
+                formData.append("Content", content);
+                formData.append("IsAnonymous", isAnonymous);
+
+                const tokenInput = form.querySelector('input[name="__RequestVerificationToken"]');
+                if (tokenInput) {
+                    formData.append("__RequestVerificationToken", tokenInput.value);
+                }
+
+                const res = await fetch("/Social/Comment", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: formData.toString()
+                });
+
+                if (res.status === 401) {
+                    window.location.href = `/Auth/Login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
+                    return;
+                }
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error("Lỗi gửi bình luận: " + errText);
+                }
+
+                const data = await res.json();
+                if (data.success && data.comment) {
+                    input.value = "";
+                    if (anonInput) anonInput.checked = false;
+
+                    const list = document.getElementById(`comments-list-${reviewId}`);
+                    if (list) {
+                        if (list.innerHTML.includes("Chưa có bình luận nào")) {
+                            list.innerHTML = "";
+                        }
+                        list.insertAdjacentHTML("beforeend", renderCommentItem(data.comment));
+                    }
+
+                    const countEl = document.getElementById(`comment-count-${reviewId}`);
+                    if (countEl) {
+                        const currentCount = parseInt(countEl.textContent, 10) || 0;
+                        countEl.textContent = currentCount + 1;
+                    }
+                    const headingCountEl = document.getElementById(`comment-heading-count-${reviewId}`);
+                    if (headingCountEl) {
+                        const currentCount = parseInt(headingCountEl.textContent, 10) || 0;
+                        headingCountEl.textContent = currentCount + 1;
+                    }
+
+                    showToast("Đã gửi bình luận thành công!");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Không thể gửi bình luận. Vui lòng thử lại!");
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Gửi bình luận";
+                }
+            }
+        }
+
+        function formatDateTime(isoString) {
+            if (!isoString) return "";
+            try {
+                const d = new Date(isoString);
+                return d.toLocaleDateString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" });
+            } catch {
+                return isoString;
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return "";
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag));
+        }
     </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

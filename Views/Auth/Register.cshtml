@@ -1,38 +1,41 @@
-@model RegisterRequest
+﻿@model RegisterRequest
 @{
-    ViewData["Title"] = "Đăng ký";
+    ViewData["Title"] = "Đăng ký thành viên";
 }
 
-<section class="auth-card" style="max-width:440px; margin:40px auto;">
-    <p class="kicker">Tham gia cộng đồng</p>
-    <h1>Tạo tài khoản</h1>
+<div class="form-card" style="max-width:460px; margin:40px auto;">
+    <div class="form-header text-center">
+        <span class="hero-tag">GIA NHẬP CỘNG ĐỒNG</span>
+        <h1 class="form-title" style="margin-top:4px;">Tạo tài khoản</h1>
+        <p class="form-subtitle">Chia sẻ trải nghiệm thực tế và đóng góp đánh giá khách quan.</p>
+    </div>
 
     <form class="form" asp-controller="Auth" asp-action="Register" method="post">
         @Html.AntiForgeryToken()
-        <div asp-validation-summary="ModelOnly" class="panel" style="background:#fce8e6; color:#c5221f; padding:10px; margin-bottom:12px; border-radius:6px;"></div>
+        <div asp-validation-summary="ModelOnly" class="panel" style="background:#fef2f2; color:#b91c1c; padding:10px; margin-bottom:14px; border-radius:8px;"></div>
 
-        <label class="field">
-            <span>Họ và tên</span>
-            <input asp-for="FullName" required minlength="2" maxlength="150" placeholder="VD: Nguyễn Văn A" />
-            <span asp-validation-for="FullName" style="color:var(--flaw); font-size:12px;"></span>
-        </label>
+        <div class="form-group">
+            <label class="form-label">Họ và tên hiển thị <span class="req">(*)</span></label>
+            <input class="form-control" asp-for="FullName" required minlength="2" maxlength="150" placeholder="VD: Nguyễn Thị Nguyệt Hà" />
+            <span asp-validation-for="FullName" style="color:var(--cons); font-size:12px;"></span>
+        </div>
 
-        <label class="field">
-            <span>Email</span>
-            <input asp-for="Email" type="email" required placeholder="name@domain.com" />
-            <span asp-validation-for="Email" style="color:var(--flaw); font-size:12px;"></span>
-        </label>
+        <div class="form-group">
+            <label class="form-label">Địa chỉ Email <span class="req">(*)</span></label>
+            <input class="form-control" asp-for="Email" type="email" required placeholder="name@domain.com" />
+            <span asp-validation-for="Email" style="color:var(--cons); font-size:12px;"></span>
+        </div>
 
-        <label class="field">
-            <span>Mật khẩu (tối thiểu 6 ký tự)</span>
-            <input asp-for="Password" type="password" required minlength="6" placeholder="••••••••" />
-            <span asp-validation-for="Password" style="color:var(--flaw); font-size:12px;"></span>
-        </label>
+        <div class="form-group">
+            <label class="form-label">Mật khẩu <span class="req">(*)</span></label>
+            <input class="form-control" asp-for="Password" type="password" required minlength="6" placeholder="Tối thiểu 6 ký tự" />
+            <span asp-validation-for="Password" style="color:var(--cons); font-size:12px;"></span>
+        </div>
 
-        <button class="btn" type="submit" style="width:100%; margin-top:10px;">Đăng ký</button>
+        <button class="btn" type="submit" style="width:100%; margin-top:12px; padding:12px;">Tạo tài khoản ReviewNow</button>
     </form>
 
-    <p class="muted" style="margin-top:16px; font-size:14px;">
-        Đã có tài khoản? <a asp-controller="Auth" asp-action="Login">Đăng nhập</a>
+    <p class="muted text-center" style="margin-top:20px; font-size:13.5px;">
+        Đã có tài khoản? <a asp-controller="Auth" asp-action="Login" style="color:var(--primary); font-weight:700;">Đăng nhập ngay</a>
     </p>
-</section>
+</div>

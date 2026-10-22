@@ -26,6 +26,13 @@ public class ProductListItemDto
     public double AvgRating { get; set; }
     public int TotalReviews { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? LatestPros { get; set; }
+    public string? LatestCons { get; set; }
+    public string? AuthorName { get; set; }
+    public int UpvoteCount { get; set; }
+    public int CommentCount { get; set; }
+    public DateTime? LatestReviewCreatedAt { get; set; }
+    public int? LatestRating { get; set; }
 }
 
 public class StarDistributionDto
@@ -88,4 +95,21 @@ public class CategoryDto
     public string? Description { get; set; }
     public int ProductCount { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+public class TopReviewerDto
+{
+    public int UserId { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string AvatarInitial => !string.IsNullOrWhiteSpace(FullName) ? FullName.Trim().Substring(0, 1).ToUpper() : "U";
+    public int ReviewCount { get; set; }
+    public int TotalLikes { get; set; }
+}
+
+public class CategoryTopicDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int ProductCount { get; set; }
+    public int ReviewCount { get; set; }
 }

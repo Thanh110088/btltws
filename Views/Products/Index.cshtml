@@ -1,132 +1,450 @@
-@model ProductIndexViewModel
+﻿@model ProductIndexViewModel
 @{
-    ViewData["Title"] = "Khám phá sản phẩm";
+    ViewData["Title"] = "Trang chủ";
+    var hasFilter = !string.IsNullOrEmpty(Model.Query.Keyword) 
+                    || Model.Query.CategoryId.HasValue 
+                    || Model.Query.MinPrice.HasValue 
+                    || Model.Query.MaxPrice.HasValue 
+                    || (Model.Query.Sort != null && Model.Query.Sort != "newest");
     var currentCatId = Model.Query.CategoryId?.ToString() ?? "";
+    var viewMode = Context.Request.Query["view"].ToString();
+    var isFilterMode = hasFilter || viewMode == "filter";
 }
 
-<section class="hero">
-    <div class="hero-copy">
-        <p class="kicker">Flaw-first review</p>
-        <h1>Đọc hạn chế thực tế trước khi tin số sao.</h1>
-        <p>Mỗi bài viết tách riêng điểm hài lòng và hạn chế. Phần 1–2 sao được gom lại để thấy sản phẩm yếu ở đâu.</p>
-        <div class="row" style="margin-top:16px">
-            <a class="btn" asp-controller="Reviews" asp-action="Create">Viết đánh giá</a>
-        </div>
+<!-- View Switcher Bar -->
+<div class="row-between" style="margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border-light);">
+    <div class="row" style="gap: 10px;">
+        <a class="btn-ghost @(!isFilterMode ? "active" : "")" asp-controller="Products" asp-action="Index" 
+           style="@(!isFilterMode ? "background:var(--primary); color:white; border-color:var(--primary);" : "")">
+            🔥 Trang chủ & Xu hướng
+        </a>
+        <a class="btn-ghost @(isFilterMode ? "active" : "")" asp-controller="Products" asp-action="Index" asp-route-view="filter"
+           style="@(isFilterMode ? "background:var(--primary); color:white; border-color:var(--primary);" : "")">
+            🔍 Khám phá & Bộ lọc tìm kiếm
+        </a>
     </div>
-    <aside class="hero-panel">
-        <strong>Một bài review gồm hai phần độc lập</strong>
-        <div class="pair">
-            <div class="pill-pros">Pros — điểm hài lòng</div>
-            <div class="pill-cons">Cons — hạn chế thực tế</div>
-        </div>
-        <span class="muted">Có thể đăng ẩn danh. Tên và email sẽ không hiện ra ngoài.</span>
-    </aside>
-</section>
 
-<!-- Category Chips -->
-<div class="chips" style="margin-bottom:12px;">
-    <a class="chip @(string.IsNullOrEmpty(currentCatId) ? "on" : "")"
-       asp-controller="Products" asp-action="Index"
-       asp-route-keyword="@Model.Query.Keyword"
-       asp-route-sort="@Model.Query.Sort"
-       asp-route-minPrice="@Model.Query.MinPrice"
-       asp-route-maxPrice="@Model.Query.MaxPrice">
-        Tất cả
-    </a>
-    @foreach (var cat in Model.Categories)
+    @if (isFilterMode && hasFilter)
     {
-        <a class="chip @(currentCatId == cat.Id.ToString() ? "on" : "")"
-           asp-controller="Products" asp-action="Index"
-           asp-route-categoryId="@cat.Id"
-           asp-route-keyword="@Model.Query.Keyword"
-           asp-route-sort="@Model.Query.Sort"
-           asp-route-minPrice="@Model.Query.MinPrice"
-           asp-route-maxPrice="@Model.Query.MaxPrice">
-            @cat.Name
+        <a class="btn-ghost" asp-controller="Products" asp-action="Index" style="font-size:12.5px; padding:4px 12px; color:var(--cons);">
+            ✕ Xóa tất cả bộ lọc
         </a>
     }
 </div>
 
-<!-- Quick Price Presets -->
-<div class="quick-prices row" style="gap:8px; margin-bottom:12px; font-size:13px; align-items:center; flex-wrap:wrap;">
-    <span class="muted" style="font-weight:500;">Khoảng giá nhanh:</span>
-    <button type="button" class="btn-ghost" style="padding:4px 10px; font-size:12px; border-radius:12px;" onclick="setPriceRange(null, 5000000)">Dưới 5 triệu</button>
-    <button type="button" class="btn-ghost" style="padding:4px 10px; font-size:12px; border-radius:12px;" onclick="setPriceRange(5000000, 15000000)">5 – 15 triệu</button>
-    <button type="button" class="btn-ghost" style="padding:4px 10px; font-size:12px; border-radius:12px;" onclick="setPriceRange(15000000, 30000000)">15 – 30 triệu</button>
-    <button type="button" class="btn-ghost" style="padding:4px 10px; font-size:12px; border-radius:12px;" onclick="setPriceRange(30000000, null)">Trên 30 triệu</button>
-</div>
-
-<!-- Filters Form -->
-<form class="filters" asp-controller="Products" asp-action="Index" method="get">
-    <input type="hidden" name="categoryId" value="@Model.Query.CategoryId" />
-    <label class="field" style="flex:1.5; min-width:180px;">
-        <span>Từ khóa tìm kiếm</span>
-        <input name="keyword" value="@Model.Query.Keyword" placeholder="Tên sản phẩm, hãng..." />
-    </label>
-    <label class="field">
-        <span>Giá từ (₫)</span>
-        <input id="inputMinPrice" name="minPrice" type="number" min="0" step="500000" value="@Model.Query.MinPrice" placeholder="0" />
-    </label>
-    <label class="field">
-        <span>Đến (₫)</span>
-        <input id="inputMaxPrice" name="maxPrice" type="number" min="0" step="500000" value="@Model.Query.MaxPrice" placeholder="Tối đa" />
-    </label>
-    <label class="field">
-        <span>Sắp xếp</span>
-        <select name="sort" onchange="this.form.submit()">
-            <option value="newest" selected="@(Model.Query.Sort == "newest")">Mới nhất</option>
-            <option value="rating" selected="@(Model.Query.Sort == "rating")">Số sao cao</option>
-            <option value="mostReviewed" selected="@(Model.Query.Sort == "mostReviewed")">Nhiều review</option>
-        </select>
-    </label>
-    <button class="btn" type="submit" style="align-self:flex-end;">Lọc</button>
-</form>
-
-<script>
-    function setPriceRange(min, max) {
-        const minEl = document.getElementById('inputMinPrice');
-        const maxEl = document.getElementById('inputMaxPrice');
-        if (minEl) minEl.value = min !== null ? min : '';
-        if (maxEl) maxEl.value = max !== null ? max : '';
-        const form = minEl ? minEl.closest('form') : document.querySelector('.filters');
-        if (form) form.submit();
-    }
-</script>
-
-@{
-    var hasFilter = !string.IsNullOrEmpty(Model.Query.Keyword) || Model.Query.CategoryId.HasValue || Model.Query.MinPrice.HasValue || Model.Query.MaxPrice.HasValue || (Model.Query.Sort != null && Model.Query.Sort != "newest");
-}
-<div class="row" style="justify-content:space-between; align-items:center; margin:16px 0 12px 0;">
-    <span class="muted" style="font-size:14px; font-weight:500;">
-        Tìm thấy <strong>@Model.Products.TotalItems</strong> sản phẩm
-        @if (!string.IsNullOrEmpty(Model.Query.Keyword))
-        {
-            <span> với từ khóa "<strong>@Model.Query.Keyword</strong>"</span>
-        }
-    </span>
-    @if (hasFilter)
-    {
-        <a class="btn-ghost" asp-controller="Products" asp-action="Index" style="font-size:13px; padding:4px 10px; text-decoration:none;">
-            ✕ Đặt lại bộ lọc
-        </a>
-    }
-</div>
-
-<!-- Product Grid -->
-@if (Model.Products.Items.Count > 0)
+@if (!isFilterMode)
 {
-    <div class="grid">
-        @foreach (var product in Model.Products.Items)
-        {
-            <partial name="_ProductCard" model="product" />
-        }
-    </div>
-    <partial name="_Pager" model="(Model.Products.Page, Model.Products.TotalPages)" />
+    <!-- ==========================================================================
+         HOMEPAGE VIEW (Image 1)
+         ========================================================================== -->
+
+    <!-- Section 1: Đang thịnh hành hôm nay -->
+    <section style="margin-bottom: 42px;">
+        <div class="section-title-wrap">
+            <div>
+                <h2 class="section-heading">🔥 Đang thịnh hành hôm nay</h2>
+                <p class="section-desc">Những bài review được cộng đồng tương tác thảo luận nhiều nhất tuần qua</p>
+            </div>
+            <a class="view-all-link" asp-controller="Products" asp-action="Index" asp-route-view="filter" asp-route-sort="mostReviewed">
+                <span>Xem tất cả</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+        </div>
+
+        <div class="grid-4">
+            @if (Model.Products.Items.Count > 0)
+            {
+                @foreach (var product in Model.Products.Items.Take(4))
+                {
+                    <partial name="_ProductCard" model="product" />
+                }
+            }
+            else
+            {
+                <div class="card pad text-center" style="grid-column: 1 / -1; padding: 40px;">
+                    <p class="muted">Chưa có bài đánh giá thịnh hành nào.</p>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- Section 2: Hai cột (Đánh giá mới nhất & Bảng vàng/Chủ đề) -->
+    <section>
+        <div class="layout-2col">
+            <!-- Left: Đánh giá mới nhất từ thành viên -->
+            <div>
+                <div class="section-title-wrap">
+                    <div>
+                        <h2 class="section-heading">⚡ Đánh giá mới nhất từ thành viên</h2>
+                        <p class="section-desc">Cập nhật liên tục những trải nghiệm tiêu dùng chân thật hàng ngày</p>
+                    </div>
+                </div>
+
+                <div class="stack" style="gap: 16px;">
+                    @if (Model.LatestReviews.Count > 0)
+                    {
+                        foreach (var item in Model.LatestReviews)
+                        {
+                            var authorInitial = !string.IsNullOrWhiteSpace(item.AuthorName) ? item.AuthorName.Trim().Substring(0, 1).ToUpper() : "U";
+                            var ratingStr = item.Rating.ToString("0.0");
+                            var priceDisplay = item.ProductPrice.HasValue ? item.ProductPrice.Value.ToString("N0") + " đ" : "";
+
+                            <article class="review-item-horizontal">
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId" class="rh-thumb">
+                                    @if (!string.IsNullOrEmpty(item.ProductImageUrl))
+                                    {
+                                        <img src="@item.ProductImageUrl" alt="@item.ProductName" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <div style="color:white; opacity:0.8; font-size:32px; font-weight:800;">
+                                            @(!string.IsNullOrEmpty(item.ProductName) ? item.ProductName.Substring(0, 1).ToUpper() : "P")
+                                        </div>
+                                    }
+                                    <span class="rh-category-tag">@(!string.IsNullOrEmpty(item.CategoryName) ? item.CategoryName : "Sản phẩm")</span>
+                                </a>
+
+                                <div class="rh-content">
+                                    <div>
+                                        <div class="rh-top-row">
+                                            <span class="rh-rating-tag">★ @ratingStr</span>
+                                            <span class="rh-product-info">@item.ProductName @(!string.IsNullOrEmpty(priceDisplay) ? "• " : "")<strong>@priceDisplay</strong></span>
+                                        </div>
+
+                                        <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId">
+                                            <h3 class="rh-title">
+                                                Đánh giá @item.ProductName
+                                            </h3>
+                                        </a>
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Pros))
+                                        {
+                                            <p class="rh-excerpt" style="margin-bottom: 4px; color: var(--pros-text);">
+                                                <strong>✔ Ưu điểm:</strong> @item.Pros
+                                            </p>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.Cons))
+                                        {
+                                            <p class="rh-excerpt" style="color: var(--cons-text);">
+                                                <strong>✖ Nhược điểm:</strong> @item.Cons
+                                            </p>
+                                        }
+                                    </div>
+
+                                    <div class="rh-footer">
+                                        <div class="rh-author">
+                                            <span class="rh-avatar">@authorInitial</span>
+                                            <span class="who">@item.AuthorName</span>
+                                            <span class="rh-meta-text">· @item.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                        </div>
+
+                                        <div class="rc-stats">
+                                            <span class="rc-stat-item" title="Lượt thích">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                                <span>@item.UpvoteCount</span>
+                                            </span>
+                                            <span class="rc-stat-item comment" title="Bình luận">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                                <span>@item.CommentCount</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        }
+                    }
+                    else
+                    {
+                        <div class="card pad text-center" style="padding: 30px;">
+                            <p class="muted">Chưa có bài đánh giá nào từ cộng đồng.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right Sidebar Widgets -->
+            <aside class="stack" style="gap: 20px;">
+                <!-- Widget 1: Bảng vàng Reviewer tuần -->
+                <div class="widget-card">
+                    <div class="widget-header">
+                        <h3 class="widget-title">🏆 Bảng vàng Reviewer tuần</h3>
+                        <p class="widget-sub">Cộng đồng cảm ơn các bài đánh giá chất lượng nhất</p>
+                    </div>
+
+                    <div class="top-reviewer-list">
+                        @if (Model.TopReviewers.Count > 0)
+                        {
+                            var rank = 1;
+                            var rankColors = new[] { "#f43f5e", "#0284c7", "#ea580c", "#10b981", "#8b5cf6" };
+                            foreach (var reviewer in Model.TopReviewers)
+                            {
+                                var color = rankColors[(rank - 1) % rankColors.Length];
+                                <div class="reviewer-item">
+                                    <div class="reviewer-left">
+                                        <span class="reviewer-rank rank-@rank">@rank</span>
+                                        <span class="reviewer-avatar" style="background:@color;">@reviewer.AvatarInitial</span>
+                                        <div class="reviewer-info">
+                                            <span class="reviewer-name">@reviewer.FullName</span>
+                                            <span class="reviewer-stats">@reviewer.ReviewCount bài review • @reviewer.TotalLikes tim</span>
+                                        </div>
+                                    </div>
+                                    <a asp-controller="Social" asp-action="UserProfile" asp-route-id="@reviewer.UserId" class="btn-follow">Xem hồ sơ</a>
+                                </div>
+                                rank++;
+                            }
+                        }
+                        else
+                        {
+                            <p class="muted" style="padding:16px; font-size:13px; text-align:center;">Chưa có dữ liệu thành viên.</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Widget 2: Chủ đề thảo luận sôi nổi -->
+                <div class="widget-card">
+                    <div class="widget-header">
+                        <h3 class="widget-title">💬 Chủ đề thảo luận sôi nổi</h3>
+                        <p class="widget-sub">Các danh mục và xu hướng được quan tâm hàng đầu</p>
+                    </div>
+
+                    <div class="topic-list">
+                        @if (Model.HotTopics.Count > 0)
+                        {
+                            foreach (var topic in Model.HotTopics)
+                            {
+                                <a class="topic-item" asp-controller="Products" asp-action="Index" asp-route-categoryId="@topic.Id">
+                                    <span>#@topic.Name</span>
+                                    <span class="topic-count">@topic.ReviewCount bài review (@topic.ProductCount sản phẩm)</span>
+                                </a>
+                            }
+                        }
+                        else
+                        {
+                            <p class="muted" style="padding:16px; font-size:13px; text-align:center;">Chưa có danh mục nào.</p>
+                        }
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </section>
 }
 else
 {
-    <div class="panel empty" style="text-align:center; padding:48px 16px;">
-        <p style="font-size:16px; margin-bottom:8px;">Không có sản phẩm khớp bộ lọc.</p>
-        <a class="btn-ghost" asp-controller="Products" asp-action="Index">Đặt lại bộ lọc</a>
+    <!-- ==========================================================================
+         FILTER & SEARCH PAGE (Image 4)
+         ========================================================================== -->
+
+    <div class="filter-page-header">
+        <h1 class="filter-page-title">
+            <span>🔍 Khám Phá & Tìm Kiếm Đánh Giá</span>
+        </h1>
+        <p class="filter-page-sub">
+            Tìm thấy <strong>@Model.Products.TotalItems</strong> bài đánh giá phù hợp với tiêu chí của bạn
+            @if (!string.IsNullOrEmpty(Model.Query.Keyword))
+            {
+                <span>với từ khóa "<strong>@Model.Query.Keyword</strong>"</span>
+            }
+        </p>
+
+        <!-- Active Filter Tags -->
+        @if (!string.IsNullOrEmpty(Model.Query.Keyword) || Model.Query.CategoryId.HasValue || Model.Query.MinPrice.HasValue || Model.Query.MaxPrice.HasValue)
+        {
+            <div class="active-filter-tags">
+                @if (!string.IsNullOrEmpty(Model.Query.Keyword))
+                {
+                    <span class="filter-tag">
+                        <span>Từ khóa: @Model.Query.Keyword</span>
+                        <a asp-controller="Products" asp-action="Index" asp-route-view="filter" asp-route-categoryId="@Model.Query.CategoryId" class="tag-remove">✕</a>
+                    </span>
+                }
+                @if (Model.Query.CategoryId.HasValue)
+                {
+                    var catName = Model.Categories.FirstOrDefault(c => c.Id == Model.Query.CategoryId.Value)?.Name ?? "Ngành hàng";
+                    <span class="filter-tag">
+                        <span>@catName</span>
+                        <a asp-controller="Products" asp-action="Index" asp-route-view="filter" asp-route-keyword="@Model.Query.Keyword" class="tag-remove">✕</a>
+                    </span>
+                }
+                @if (Model.Query.MinPrice.HasValue || Model.Query.MaxPrice.HasValue)
+                {
+                    <span class="filter-tag">
+                        <span>Giá: @(Model.Query.MinPrice?.ToString("N0") ?? "0") đ - @(Model.Query.MaxPrice?.ToString("N0") ?? "...") đ</span>
+                        <a asp-controller="Products" asp-action="Index" asp-route-view="filter" asp-route-keyword="@Model.Query.Keyword" asp-route-categoryId="@Model.Query.CategoryId" class="tag-remove">✕</a>
+                    </span>
+                }
+                <a class="filter-tag-clear" asp-controller="Products" asp-action="Index" asp-route-view="filter">Xóa tất cả</a>
+            </div>
+        }
+    </div>
+
+    <div class="layout-filter">
+        <!-- Left: Bộ lọc tìm kiếm -->
+        <aside class="filter-sidebar">
+            <h3 class="filter-sidebar-title">BỘ LỌC TÌM KIẾM</h3>
+
+            <form id="filterSidebarForm" asp-controller="Products" asp-action="Index" method="get">
+                <input type="hidden" name="view" value="filter" />
+                <input type="hidden" name="sort" value="@Model.Query.Sort" />
+                <input type="hidden" name="keyword" value="@Model.Query.Keyword" />
+
+                <!-- 1. Ngành hàng sản phẩm -->
+                <div class="filter-group">
+                    <h4 class="filter-group-title">Ngành hàng sản phẩm</h4>
+                    <div class="filter-options-list">
+                        <label class="filter-checkbox-label">
+                            <input type="radio" name="categoryId" value="" @(string.IsNullOrEmpty(currentCatId) ? "checked" : "") onchange="this.form.submit()" />
+                            <span>Tất cả ngành hàng</span>
+                        </label>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <label class="filter-checkbox-label">
+                                <input type="radio" name="categoryId" value="@cat.Id" @(currentCatId == cat.Id.ToString() ? "checked" : "") onchange="this.form.submit()" />
+                                <span>@cat.Name</span>
+                                <span class="filter-count">(@cat.ProductCount)</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <!-- 2. Đánh giá điểm sao -->
+                <div class="filter-group">
+                    <h4 class="filter-group-title">Đánh giá điểm sao</h4>
+                    <div class="filter-options-list">
+                        <label class="filter-checkbox-label">
+                            <input type="radio" name="ratingFilter" checked />
+                            <span>Từ 4.0 sao trở lên (Rất tốt)</span>
+                        </label>
+                        <label class="filter-checkbox-label">
+                            <input type="radio" name="ratingFilter" />
+                            <span>Từ 4.5 sao trở lên (Xuất sắc)</span>
+                        </label>
+                        <label class="filter-checkbox-label">
+                            <input type="radio" name="ratingFilter" />
+                            <span>Từ 3.0 sao trở lên</span>
+                        </label>
+                        <label class="filter-checkbox-label">
+                            <input type="radio" name="ratingFilter" />
+                            <span>Tất cả điểm số</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. Khoảng giá tham khảo -->
+                <div class="filter-group">
+                    <h4 class="filter-group-title">Khoảng giá tham khảo</h4>
+                    <div class="filter-options-list">
+                        <label class="filter-checkbox-label">
+                            <input type="checkbox" onchange="setFilterPrice(0, 500000)" />
+                            <span>Dưới 500.000 đ</span>
+                        </label>
+                        <label class="filter-checkbox-label">
+                            <input type="checkbox" onchange="setFilterPrice(500000, 2000000)" />
+                            <span>500.000 đ - 2.000.000 đ</span>
+                        </label>
+                        <label class="filter-checkbox-label">
+                            <input type="checkbox" onchange="setFilterPrice(2000000, 10000000)" />
+                            <span>2.000.000 đ - 10.000.000 đ</span>
+                        </label>
+                        <label class="filter-checkbox-label">
+                            <input type="checkbox" onchange="setFilterPrice(10000000, 100000000)" />
+                            <span>Trên 10.000.000 đ</span>
+                        </label>
+                    </div>
+                    <input type="hidden" id="minPriceInput" name="minPrice" value="@Model.Query.MinPrice" />
+                    <input type="hidden" id="maxPriceInput" name="maxPrice" value="@Model.Query.MaxPrice" />
+                </div>
+
+                <!-- 4. Tiêu chí minh bạch -->
+                <div class="filter-group">
+                    <h4 class="filter-group-title">Tiêu chí minh bạch</h4>
+                    <div class="filter-options-list">
+                        <label class="filter-checkbox-label">
+                            <input type="checkbox" checked />
+                            <span>Có ảnh thực tế tự chụp</span>
+                        </label>
+                        <label class="filter-checkbox-label">
+                            <input type="checkbox" checked />
+                            <span>Đã xác thực hóa đơn mua</span>
+                        </label>
+                        <label class="filter-checkbox-label">
+                            <input type="checkbox" />
+                            <span>Tác giả là Reviewer Cấp 2+</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button class="btn-apply-filters" type="submit">Áp Dụng Bộ Lọc</button>
+            </form>
+        </aside>
+
+        <!-- Right: Sort bar & Grid of cards -->
+        <div>
+            <!-- Sort Bar -->
+            <div class="sort-bar">
+                <span class="sort-label">Sắp xếp theo:</span>
+                <div class="sort-tabs">
+                    <a class="sort-btn @(Model.Query.Sort == "newest" || string.IsNullOrEmpty(Model.Query.Sort) ? "active" : "")"
+                       asp-controller="Products" asp-action="Index"
+                       asp-route-view="filter"
+                       asp-route-sort="newest"
+                       asp-route-categoryId="@Model.Query.CategoryId"
+                       asp-route-keyword="@Model.Query.Keyword">
+                        Mới nhất
+                    </a>
+                    <a class="sort-btn @(Model.Query.Sort == "rating" ? "active" : "")"
+                       asp-controller="Products" asp-action="Index"
+                       asp-route-view="filter"
+                       asp-route-sort="rating"
+                       asp-route-categoryId="@Model.Query.CategoryId"
+                       asp-route-keyword="@Model.Query.Keyword">
+                        Đánh giá cao nhất
+                    </a>
+                    <a class="sort-btn @(Model.Query.Sort == "mostReviewed" ? "active" : "")"
+                       asp-controller="Products" asp-action="Index"
+                       asp-route-view="filter"
+                       asp-route-sort="mostReviewed"
+                       asp-route-categoryId="@Model.Query.CategoryId"
+                       asp-route-keyword="@Model.Query.Keyword">
+                        Nhiều tim thích nhất
+                    </a>
+                </div>
+            </div>
+
+            <!-- Cards Grid (4 columns) -->
+            @if (Model.Products.Items.Count > 0)
+            {
+                <div class="grid-4">
+                    @foreach (var product in Model.Products.Items)
+                    {
+                        <partial name="_ProductCard" model="product" />
+                    }
+                </div>
+
+                <div class="pagination">
+                    <span class="page-num active">1</span>
+                    <a href="#" class="page-num">2</a>
+                    <a href="#" class="page-num">3</a>
+                    <span class="muted" style="padding:0 6px;">...</span>
+                    <a href="#" class="page-num">12</a>
+                    <a href="#" class="page-next">Trang sau ›</a>
+                </div>
+            }
+            else
+            {
+                <div class="panel empty pad text-center" style="padding: 60px 20px;">
+                    <p style="font-size:16px; font-weight:600; color:var(--ink);">Không tìm thấy bài đánh giá nào khớp với tiêu chí của bạn.</p>
+                    <p class="muted">Hãy thử bỏ bớt bộ lọc hoặc tìm kiếm với từ khóa khác.</p>
+                    <a class="btn" asp-controller="Products" asp-action="Index" asp-route-view="filter" style="margin-top:12px;">Xóa bộ lọc</a>
+                </div>
+            }
+        </div>
     </div>
 }
+
+<script>
+    function setFilterPrice(min, max) {
+        document.getElementById('minPriceInput').value = min;
+        document.getElementById('maxPriceInput').value = max;
+        document.getElementById('filterSidebarForm').submit();
+    }
+</script>

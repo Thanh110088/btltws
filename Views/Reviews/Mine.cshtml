@@ -1,31 +1,147 @@
-@model PagedResult<ReviewDto>
+﻿@model PagedResult<ReviewDto>
 @{
-    ViewData["Title"] = "Bài đánh giá của tôi";
+    ViewData["Title"] = "Quản lý bài viết của tôi";
+    var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? User.Identity?.Name ?? "Người dùng";
+    var userInitial = !string.IsNullOrEmpty(userName) ? userName.Substring(0, 1).ToUpper() : "U";
+    var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+    var handle = !string.IsNullOrEmpty(userEmail) && userEmail.Contains("@") ? userEmail.Split('@')[0] : null;
+    var totalLikes = Model.Items.Sum(r => r.UpvoteCount);
+    var totalComments = Model.Items.Sum(r => r.CommentCount);
 }
 
-<div class="section-head row" style="justify-content:space-between; align-items:center; margin-bottom:20px;">
-    <div>
-        <p class="kicker">Quản lý bài viết</p>
-        <h1 style="margin:4px 0 0 0;">Bài đánh giá của tôi</h1>
-    </div>
-    <a class="btn" asp-controller="Reviews" asp-action="Create">Viết đánh giá mới</a>
-</div>
+<!-- Profile Hero Card -->
+<div class="profile-hero-card">
+    <div class="profile-hero-top">
+        <div class="profile-hero-user">
+            <div class="profile-avatar-big">
+                <span>@userInitial</span>
+            </div>
+            <div class="profile-user-details">
+                <h2>
+                    <span>@userName</span>
+                    @if (handle != null)
+                    {
+                        <span class="profile-handle">(@("@" + handle))</span>
+                    }
+                </h2>
+                @if (userEmail != null)
+                {
+                    <p class="muted text-xs" style="margin:2px 0 0;">@userEmail</p>
+                }
+            </div>
+        </div>
 
-@if (Model.Items.Count > 0)
-{
-    <div class="stack" style="gap:16px;">
-        @foreach (var review in Model.Items)
+        <a class="btn-primary" asp-controller="Reviews" asp-action="Picker" style="padding:8px 18px; font-size:13.5px;">
+            + Viết đánh giá mới
+        </a>
+    </div>
+
+    <div class="profile-stats-row">
+        <span>Đóng góp: <strong class="profile-stat-val">@Model.TotalItems</strong> bài đánh giá</span>
+        @if (totalLikes > 0)
         {
-            <partial name="_ReviewCard" model="review" />
+            <span class="hero-stats-dot">•</span>
+            <span><strong class="profile-stat-val">@totalLikes</strong> lượt thích</span>
+        }
+        @if (totalComments > 0)
+        {
+            <span class="hero-stats-dot">•</span>
+            <span><strong class="profile-stat-val">@totalComments</strong> bình luận</span>
         }
     </div>
-    <partial name="_Pager" model="(Model.Page, Model.TotalPages)" />
-}
-else
-{
-    <div class="panel empty pad" style="text-align:center; padding:48px 16px;">
-        <h3 style="margin-bottom:8px;">Bạn chưa có bài đánh giá nào.</h3>
-        <p class="muted" style="margin-bottom:20px;">Hãy chia sẻ trải nghiệm thực tế với các ưu điểm và hạn chế để giúp cộng đồng mua sắm thông thái hơn!</p>
-        <a class="btn" asp-controller="Reviews" asp-action="Create">Bắt đầu viết đánh giá</a>
-    </div>
-}
+</div>
+
+<!-- List of Reviews (Image 5) -->
+<div class="stack" style="gap: 16px;">
+    @if (Model.Items.Count > 0)
+    {
+        @foreach (var review in Model.Items)
+        {
+            var isPending = review.IsHidden;
+            <article class="mine-review-item">
+                <div class="mine-review-thumb">
+                    @if (review.ImageUrls != null && review.ImageUrls.Count > 0)
+                    {
+                        <img src="@review.ImageUrls[0]" alt="@review.ProductName" />
+                    }
+                    else
+                    {
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8">
+                            <rect x="5" y="2" width="14" height="20" rx="3"></rect>
+                            <line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"></line>
+                        </svg>
+                    }
+                </div>
+
+                <div class="mine-review-main">
+                    <div>
+                        @if (!isPending)
+                        {
+                            <span class="badge badge-approved" style="margin-bottom:6px;">✓ Đã duyệt</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-pending" style="margin-bottom:6px;">Chờ kiểm duyệt</span>
+                        }
+                    </div>
+
+                    <a asp-controller="Products" asp-action="Details" asp-route-id="@review.ProductId">
+                        <h3 class="mine-review-title">
+                            Đánh giá @review.ProductName: @review.Pros.Substring(0, Math.Min(review.Pros.Length, 65))...
+                        </h3>
+                    </a>
+
+                    <p class="mine-review-excerpt">
+                        @review.Cons
+                    </p>
+
+                    @if (isPending)
+                    {
+                        <div class="admin-pending-note">
+                            Bài viết hiện đang ở chế độ ẩn.
+                        </div>
+                    }
+
+                    <div class="mine-review-meta" style="margin-top:6px;">
+                        <span style="color:#f59e0b; font-weight:800;">★ @review.Rating.ToString("0.0")</span>
+                        <span>•</span>
+                        <span>@review.UpvoteCount lượt thích</span>
+                        <span>•</span>
+                        <span>@review.CommentCount bình luận</span>
+                        <span>•</span>
+                        <span>@review.CreatedAt.ToString("dd/MM/yyyy")</span>
+                    </div>
+                </div>
+
+                <div class="mine-review-actions">
+                    <a class="btn-ghost text-center" asp-controller="Reviews" asp-action="Edit" asp-route-id="@review.Id" style="font-size:13px; padding:6px 14px;">
+                        Chỉnh sửa
+                    </a>
+                    <form asp-controller="Reviews" asp-action="Delete" asp-route-id="@review.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài đánh giá này?');">
+                        @Html.AntiForgeryToken()
+                        <button class="btn-danger" type="submit" style="width:100%; font-size:13px; padding:6px 14px;">
+                            Xóa bài
+                        </button>
+                    </form>
+                </div>
+            </article>
+        }
+    }
+    else
+    {
+        <div class="card pad text-center" style="padding:48px 20px; background:var(--surface);">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.6" style="margin-bottom:12px;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <h3 style="margin:0 0 6px; font-size:16px; color:var(--ink);">Bạn chưa có bài đánh giá nào</h3>
+            <p class="muted text-xs" style="margin:0 0 16px;">Hãy chia sẻ trải nghiệm thực tế với ưu điểm và hạn chế để giúp cộng đồng người tiêu dùng!</p>
+            <a class="btn" asp-controller="Reviews" asp-action="Picker">
+                + Viết bài đánh giá đầu tiên
+            </a>
+        </div>
+    }
+</div>

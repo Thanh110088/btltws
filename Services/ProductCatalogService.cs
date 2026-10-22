@@ -12,6 +12,9 @@ public interface IProductCatalogService
     Task<ProductDetailDto> GetDetailAsync(int id, CancellationToken cancellationToken);
     Task<PagedResult<ReviewDto>> GetReviewsAsync(int productId, ReviewFilterQuery query, CancellationToken cancellationToken);
     Task<FlawExtractionDto> GetFlawsAsync(int productId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<ReviewDto>> GetLatestReviewsAsync(int count, CancellationToken cancellationToken);     Task<IReadOnlyList<TopReviewerDto>> GetTopReviewersAsync(int count, CancellationToken cancellationToken);
+    Task<IReadOnlyList<CategoryTopicDto>> GetHotTopicsAsync(CancellationToken cancellationToken);
+    Task<(int TotalReviews, int TotalMembers)> GetPlatformStatsAsync(CancellationToken cancellationToken);
 }
 
 public class ProductCatalogService : IProductCatalogService
@@ -75,7 +78,14 @@ public class ProductCatalogService : IProductCatalogService
                 CategoryName = product.Category.Name,
                 AvgRating = product.Reviews.Where(review => !review.IsHidden).Average(review => (double?)review.Rating) ?? 0,
                 TotalReviews = product.Reviews.Count(review => !review.IsHidden),
-                CreatedAt = product.CreatedAt
+                CreatedAt = product.CreatedAt,
+                LatestPros = product.Reviews.Where(review => !review.IsHidden).OrderByDescending(review => review.CreatedAt).Select(review => review.Pros).FirstOrDefault(),
+                LatestCons = product.Reviews.Where(review => !review.IsHidden).OrderByDescending(review => review.CreatedAt).Select(review => review.Cons).FirstOrDefault(),
+                AuthorName = product.Reviews.Where(review => !review.IsHidden).OrderByDescending(review => review.CreatedAt).Select(review => review.IsAnonymous ? "Ẩn danh" : review.User.FullName).FirstOrDefault(),
+                UpvoteCount = product.Reviews.Where(review => !review.IsHidden).OrderByDescending(review => review.CreatedAt).Select(review => review.UpvoteCount).FirstOrDefault(),
+                CommentCount = product.Reviews.Where(review => !review.IsHidden).OrderByDescending(review => review.CreatedAt).Select(review => review.Comments.Count).FirstOrDefault(),
+                LatestReviewCreatedAt = product.Reviews.Where(review => !review.IsHidden).OrderByDescending(review => review.CreatedAt).Select(review => (DateTime?)review.CreatedAt).FirstOrDefault(),
+                LatestRating = product.Reviews.Where(review => !review.IsHidden).OrderByDescending(review => review.CreatedAt).Select(review => (int?)review.Rating).FirstOrDefault()
             })
             .ToListAsync(cancellationToken);
 
@@ -165,7 +175,7 @@ public class ProductCatalogService : IProductCatalogService
         var (page, pageSize) = Paging.Normalize(query.Page, query.PageSize);
         IQueryable<Review> reviews = _db.Reviews.AsNoTracking()
             .Where(review => review.ProductId == productId && !review.IsHidden);
-
+        
         if (query.Star.HasValue)
             reviews = reviews.Where(review => review.Rating == query.Star.Value);
 
@@ -222,5 +232,55 @@ public class ProductCatalogService : IProductCatalogService
             FlawReviewCount = flaws.Count,
             Flaws = flaws
         };
+    }
+
+    public async Task<IReadOnlyList<ReviewDto>> GetLatestReviewsAsync(int count, CancellationToken cancellationToken)
+    {
+        var query = _db.Reviews
+            .Where(r => !r.IsHidden)
+            .OrderByDescending(r => r.CreatedAt)
+            .Take(count);
+
+        return await ReviewQueries.MapAsync(query, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<TopReviewerDto>> GetTopReviewersAsync(int count, CancellationToken cancellationToken)
+    {
+        return await _db.Users.AsNoTracking()
+            .Where(u => u.Reviews.Any(r => !r.IsHidden))
+            .Select(u => new TopReviewerDto
+            {
+                UserId = u.Id,
+                FullName = u.FullName,
+                ReviewCount = u.Reviews.Count(r => !r.IsHidden),
+                TotalLikes = u.Reviews.Where(r => !r.IsHidden).Sum(r => r.UpvoteCount)
+            })
+            .OrderByDescending(u => u.ReviewCount)
+            .ThenByDescending(u => u.TotalLikes)
+            .Take(count)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<CategoryTopicDto>> GetHotTopicsAsync(CancellationToken cancellationToken)
+    {
+        return await _db.Categories.AsNoTracking()
+            .Select(c => new CategoryTopicDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                ProductCount = c.Products.Count,
+                ReviewCount = c.Products.SelectMany(p => p.Reviews).Count(r => !r.IsHidden)
+            })
+            .OrderByDescending(c => c.ReviewCount)
+            .ThenByDescending(c => c.ProductCount)
+            .Take(6)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<(int TotalReviews, int TotalMembers)> GetPlatformStatsAsync(CancellationToken cancellationToken)
+    {
+        var reviews = await _db.Reviews.CountAsync(r => !r.IsHidden, cancellationToken);
+        var members = await _db.Users.CountAsync(cancellationToken);
+        return (reviews, members);
     }
 }

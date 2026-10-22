@@ -1,188 +1,331 @@
-@model ProductDetailViewModel
+﻿@model ProductDetailViewModel
 @{
     ViewData["Title"] = Model.Product.Name;
-    var hues = new[] { "#0e7c74", "#b7791f", "#c2410c", "#3f6212", "#1d4ed8", "#7c3aed" };
-    var firstChar = !string.IsNullOrWhiteSpace(Model.Product.Name) ? Model.Product.Name.Trim()[0] : '?';
-    var hue = hues[Math.Abs(firstChar) % hues.Length];
+    var hasReviews = Model.Product.TotalReviews > 0;
+    var ratingStr = hasReviews ? Model.Product.AvgRating.ToString("0.0") : null;
+    var roundedRating = hasReviews ? (int)Math.Round(Model.Product.AvgRating) : 0;
+    var firstReview = Model.Reviews.Items.FirstOrDefault();
 
-    var total = Model.Product.TotalReviews > 0 ? Model.Product.TotalReviews : 1;
-    var dist = Model.Product.StarDistribution;
-    var starBars = new[]
-    {
-        (Level: 5, Count: dist.Star5, Pct: dist.Star5 * 100 / total),
-        (Level: 4, Count: dist.Star4, Pct: dist.Star4 * 100 / total),
-        (Level: 3, Count: dist.Star3, Pct: dist.Star3 * 100 / total),
-        (Level: 2, Count: dist.Star2, Pct: dist.Star2 * 100 / total),
-        (Level: 1, Count: dist.Star1, Pct: dist.Star1 * 100 / total)
-    };
+    // Lấy danh sách ưu điểm và nhược điểm thực tế từ các bài review của người dùng
+    var allPros = Model.Reviews.Items
+        .Where(r => !string.IsNullOrWhiteSpace(r.Pros))
+        .Select(r => r.Pros.Trim())
+        .Distinct()
+        .ToList();
 
-    var currentStar = Model.FilterQuery.Star?.ToString() ?? "";
-    var currentHasImages = Model.FilterQuery.HasImages == true;
-    var currentSort = Model.FilterQuery.Sort ?? "newest";
+    var allCons = Model.Reviews.Items
+        .Where(r => !string.IsNullOrWhiteSpace(r.Cons))
+        .Select(r => r.Cons.Trim())
+        .Distinct()
+        .ToList();
 }
 
-<p class="kicker">
-    <a asp-controller="Products" asp-action="Index">Khám phá</a> / @Model.Product.CategoryName
-</p>
+<!-- Breadcrumb -->
+<div class="breadcrumb-bar">
+    <a asp-controller="Products" asp-action="Index">Trang chủ</a>
+    <span>›</span>
+    @if (!string.IsNullOrEmpty(Model.Product.CategoryName))
+    {
+        <a asp-controller="Products" asp-action="Index" asp-route-categoryId="@Model.Product.CategoryId">@Model.Product.CategoryName</a>
+        <span>›</span>
+    }
+    @if (!string.IsNullOrEmpty(Model.Product.Brand))
+    {
+        <span>@Model.Product.Brand</span>
+        <span>›</span>
+    }
+    <strong style="color:var(--ink);">@Model.Product.Name</strong>
+</div>
 
-<div class="layout">
-    <!-- Left Column: Product Info & Stats -->
-    <aside class="stack">
-        <div class="card">
-            <div class="thumb" style="height:220px; border-radius:10px 10px 0 0; @(string.IsNullOrEmpty(Model.Product.ImageUrl) ? $"background:{hue}" : "")">
-                @if (!string.IsNullOrEmpty(Model.Product.ImageUrl))
+<div class="layout-2col">
+    <!-- Left Main Column (approx 68%) -->
+    <div>
+        <!-- 1. Product Summary & Rating Card -->
+        <div class="product-summary-card">
+            <div class="score-box">
+                @if (hasReviews && ratingStr != null)
                 {
-                    <img src="@Model.Product.ImageUrl" alt="@Model.Product.Name" style="width:100%; height:100%; object-fit:cover;" />
+                    <div class="score-number">@ratingStr <span class="score-max">/ 5.0</span></div>
+                    <div class="score-stars">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <svg class="star @(i <= roundedRating ? "on" : "")" style="width:18px; height:18px; fill:@(i <= roundedRating ? "#f59e0b" : "#cbd5e1");" viewBox="0 0 20 20">
+                                <path d="M10 1.8 12.4 7l5.6.5-4.2 3.7 1.3 5.5L10 14.2 4.9 16.7 6.2 11.2 2 7.5 7.6 7z" />
+                            </svg>
+                        }
+                    </div>
+                    <div class="score-verdict">
+                        <span>@Model.Product.TotalReviews bài đánh giá</span>
+                    </div>
                 }
                 else
                 {
-                    <span style="font-size:48px; color:white; font-weight:700;">@char.ToUpper(firstChar)</span>
+                    <div class="score-number" style="font-size:24px; color:var(--text-muted);">Mới</div>
+                    <p class="muted text-xs" style="margin:8px 0 0;">Chưa có đánh giá nào</p>
                 }
             </div>
-            <div class="pad">
-                <p class="kicker">@Model.Product.Brand</p>
-                <h2 style="margin:6px 0;">@Model.Product.Name</h2>
-                <p class="price" style="font-size:20px; font-weight:700; color:var(--teal); margin:8px 0;">
-                    @Model.Product.Price.ToString("N0") ₫
-                </p>
-                <p style="margin:10px 0 16px 0; color:var(--muted); font-size:14px; line-height:1.5;">
-                    @Model.Product.Description
-                </p>
-                <a class="btn" style="width:100%; text-align:center; display:block;"
-                   asp-controller="Reviews" asp-action="Create" asp-route-productId="@Model.Product.Id">
-                    Viết đánh giá
-                </a>
-            </div>
-        </div>
 
-        <div class="stat card pad">
-            <div class="big" style="font-size:42px; font-weight:800; line-height:1;">
-                @Model.Product.AvgRating.ToString("0.0")
-            </div>
-            <div style="margin:6px 0;">
-                <span class="stars">
-                    @{
-                        var rounded = (int)Math.Round(Model.Product.AvgRating);
-                    }
-                    @for (int i = 1; i <= 5; i++)
-                    {
-                        <svg class="star @(i <= rounded ? "on" : "")" viewBox="0 0 20 20" aria-hidden="true">
-                            <path d="M10 1.8 12.4 7l5.6.5-4.2 3.7 1.3 5.5L10 14.2 4.9 16.7 6.2 11.2 2 7.5 7.6 7z" />
-                        </svg>
-                    }
-                </span>
-            </div>
-            <p class="muted" style="margin-bottom:14px;">@Model.Product.TotalReviews đánh giá</p>
-            <div class="bars">
-                @foreach (var bar in starBars)
+            <div class="specs-grid">
+                <div class="spec-item">
+                    <span class="spec-label">Sản phẩm:</span>
+                    <span class="spec-val">@Model.Product.Name</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">Mức giá:</span>
+                    <span class="spec-val price">@Model.Product.Price.ToString("N0") đ</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Product.Brand))
                 {
-                    <div class="bar-row">
-                        <span>@bar.Level★</span>
-                        <div class="track">
-                            <span style="width:@(Model.Product.TotalReviews > 0 ? bar.Pct : 0)%;"></span>
-                        </div>
-                        <span>@bar.Count</span>
+                    <div class="spec-item">
+                        <span class="spec-label">Thương hiệu:</span>
+                        <span class="spec-val">@Model.Product.Brand</span>
                     </div>
                 }
-            </div>
-        </div>
-    </aside>
-
-    <!-- Right Column: Flaw-first highlights & Review List -->
-    <section>
-        <!-- Flaw-First Showcase -->
-        <div class="section-head row" style="justify-content:space-between; align-items:flex-end;">
-            <div>
-                <p class="kicker">Flaw-first</p>
-                <h2 style="margin:4px 0 0 0;">Hạn chế thực tế</h2>
-            </div>
-            <span class="badge hot">@Model.Flaws.FlawReviewCount bài 1–2 sao</span>
-        </div>
-
-        <div class="flaw-list" style="margin-top:12px;">
-            @if (Model.Flaws.Flaws.Count > 0)
-            {
-                @foreach (var flaw in Model.Flaws.Flaws)
+                @if (!string.IsNullOrEmpty(Model.Product.CategoryName))
                 {
-                    <article class="flaw">
-                        <span class="badge hot">@flaw.Rating sao</span>
-                        <p style="margin:0;">@flaw.Cons</p>
-                    </article>
+                    <div class="spec-item">
+                        <span class="spec-label">Ngành hàng:</span>
+                        <span class="spec-val">@Model.Product.CategoryName</span>
+                    </div>
                 }
+                <div class="spec-item">
+                    <span class="spec-label">Ngày cập nhật:</span>
+                    <span class="spec-val">@Model.Product.CreatedAt.ToString("dd/MM/yyyy")</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">Đánh giá:</span>
+                    <span class="spec-val">@(hasReviews ? $"{Model.Product.TotalReviews} bài viết" : "0 bài viết")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Big Product Showcase Image Banner -->
+        <div class="card" style="position:relative; height:340px; background:linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:20px;">
+            @if (!string.IsNullOrEmpty(Model.Product.ImageUrl))
+            {
+                <img src="@Model.Product.ImageUrl" alt="@Model.Product.Name" style="width:100%; height:100%; object-fit:contain; padding:20px;" />
             }
             else
             {
-                <div class="empty panel pad" style="text-align:center;">
-                    Chưa có bài review 1–2 sao nào phàn nàn về sản phẩm này.
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; color:#64748b;">
+                    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="5" y="2" width="14" height="20" rx="3"></rect>
+                        <line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"></line>
+                    </svg>
+                    <span style="margin-top:12px; font-weight:700; font-size:16px;">@Model.Product.Name</span>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.Product.CategoryName))
+            {
+                <span class="rc-category-tag" style="position:absolute; top:16px; left:16px; padding:4px 12px; font-size:12px;">
+                    @Model.Product.CategoryName
+                </span>
+            }
+        </div>
+
+        <!-- 3. Product Description (Mô tả sản phẩm thực tế) -->
+        @if (!string.IsNullOrWhiteSpace(Model.Product.Description))
+        {
+            <div class="card pad" style="margin-bottom:20px;">
+                <h3 style="margin-top:0; font-size:17px; color:var(--ink);">Mô tả sản phẩm</h3>
+                <p style="margin:0; line-height:1.7; color:var(--text); white-space:pre-line;">@Model.Product.Description</p>
+            </div>
+        }
+
+        <!-- 4. Side-by-Side ƯU ĐIỂM (PROS) & NHƯỢC ĐIỂM (CONS) từ người dùng thực tế -->
+        @if (allPros.Count > 0 || allCons.Count > 0)
+        {
+            <div class="pros-cons-grid" style="margin-bottom:24px;">
+                @if (allPros.Count > 0)
+                {
+                    <div class="pc-box pros">
+                        <div class="pc-header">
+                            <span>✔</span>
+                            <span>ƯU ĐIỂM (TỔNG HỢP TỪ NGƯỜI DÙNG)</span>
+                        </div>
+                        <ul class="pc-list">
+                            @foreach (var pro in allPros)
+                            {
+                                <li>
+                                    <span class="pc-bullet-pros">✔</span>
+                                    <span>@pro</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                @if (allCons.Count > 0)
+                {
+                    <div class="pc-box cons">
+                        <div class="pc-header">
+                            <span>✖</span>
+                            <span>NHƯỢC ĐIỂM (HẠN CHẾ THỰC TẾ)</span>
+                        </div>
+                        <ul class="pc-list">
+                            @foreach (var con in allCons)
+                            {
+                                <li>
+                                    <span class="pc-bullet-cons">✖</span>
+                                    <span>@con</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- 5. Flaw Extraction Box (Nhược điểm cảnh báo từ đánh giá thấp) -->
+        @if (Model.Flaws.FlawReviewCount > 0)
+        {
+            <div class="panel" style="background:#fff1f2; border:1px solid #fecdd3; border-radius:12px; padding:18px 20px; margin-bottom:24px;">
+                <div class="row" style="gap:8px; margin-bottom:10px; color:#be123c;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <h3 style="margin:0; font-size:16px; color:#be123c;">Cảnh báo nhược điểm từ người dùng thất vọng (@Model.Flaws.FlawReviewCount phản hồi ≤ 2 sao)</h3>
+                </div>
+                <div class="stack" style="gap:8px;">
+                    @foreach (var flaw in Model.Flaws.Flaws)
+                    {
+                        <div class="row" style="gap:8px; align-items:flex-start; font-size:13.5px; color:#881337;">
+                            <span style="font-weight:700;">★@flaw.Rating</span>
+                            <span style="line-height:1.5;">@flaw.Cons</span>
+                            <span class="muted text-xs" style="margin-left:auto; white-space:nowrap;">@flaw.CreatedAt.ToString("dd/MM/yyyy")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- 6. All Community Reviews on this Product -->
+        <div style="margin-top: 28px;">
+            <div class="row-between" style="margin-bottom: 18px; flex-wrap:wrap; gap:12px;">
+                <div>
+                    <h3 style="margin:0; font-size:18px;">Tất cả đánh giá từ thành viên (@Model.Reviews.TotalItems)</h3>
+                    @if (Model.Reviews.TotalItems == 0)
+                    {
+                        <p class="muted text-xs" style="margin:4px 0 0;">Chưa có bài đánh giá nào cho sản phẩm này.</p>
+                    }
+                </div>
+                <a class="btn" asp-controller="Reviews" asp-action="Create" asp-route-productId="@Model.Product.Id">
+                    + Viết đánh giá của bạn
+                </a>
+            </div>
+
+            @if (Model.Reviews.Items.Count > 0)
+            {
+                <div class="stack" style="gap: 16px;">
+                    @foreach (var r in Model.Reviews.Items)
+                    {
+                        <partial name="_ReviewCard" model="r" />
+                    }
+                </div>
+
+                <div style="margin-top:20px;">
+                    <partial name="_Pager" model="(Model.Reviews.Page, Model.Reviews.TotalPages)" />
+                </div>
+            }
+            else
+            {
+                <div class="card pad text-center" style="padding:40px 20px;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" style="margin-bottom:12px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <p style="font-weight:600; color:var(--ink); margin:0 0 6px;">Sản phẩm này chưa có bài đánh giá nào.</p>
+                    <p class="muted text-xs" style="margin:0 0 16px;">Hãy là người đầu tiên chia sẻ ưu nhược điểm thực tế để giúp cộng đồng đưa ra lựa chọn đúng đắn!</p>
+                    <a class="btn" asp-controller="Reviews" asp-action="Create" asp-route-productId="@Model.Product.Id">
+                        Viết đánh giá ngay
+                    </a>
                 </div>
             }
         </div>
+    </div>
 
-        <!-- All Reviews -->
-        <div class="section-head row" style="justify-content:space-between; align-items:center; margin-top:36px;">
-            <h2 style="margin:0;">Tất cả đánh giá</h2>
-            <a class="btn" asp-controller="Reviews" asp-action="Create" asp-route-productId="@Model.Product.Id">
-                Viết đánh giá
-            </a>
+    <!-- Right Sidebar Column (approx 32%) -->
+    <aside class="stack" style="gap: 20px;">
+        <!-- Widget 1: Thông tin sản phẩm -->
+        <div class="widget-card">
+            <div class="widget-header">
+                <h3 class="widget-title">Thông Tin Sản Phẩm</h3>
+            </div>
+            <table class="specs-table">
+                <tbody>
+                    <tr>
+                        <td class="label">Sản phẩm:</td>
+                        <td class="val">@Model.Product.Name</td>
+                    </tr>
+                    @if (!string.IsNullOrEmpty(Model.Product.Brand))
+                    {
+                        <tr>
+                            <td class="label">Thương hiệu:</td>
+                            <td class="val">@Model.Product.Brand</td>
+                        </tr>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Product.CategoryName))
+                    {
+                        <tr>
+                            <td class="label">Danh mục:</td>
+                            <td class="val">@Model.Product.CategoryName</td>
+                        </tr>
+                    }
+                    <tr>
+                        <td class="label">Giá niêm yết:</td>
+                        <td class="val" style="color:var(--primary); font-weight:700;">@Model.Product.Price.ToString("N0") đ</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Đánh giá:</td>
+                        <td class="val">@(hasReviews ? $"{Model.Product.AvgRating.ToString("0.0")} / 5.0 ({Model.Product.TotalReviews} bài)" : "Chưa có")</td>
+                    </tr>
+                    @if (hasReviews)
+                    {
+                        var totalProductComments = Model.Reviews.Items.Sum(r => r.CommentCount);
+                        <tr>
+                            <td class="label">Thảo luận:</td>
+                            <td class="val">@totalProductComments bình luận</td>
+                        </tr>
+                    }
+                    <tr>
+                        <td class="label">Ngày đăng:</td>
+                        <td class="val">@Model.Product.CreatedAt.ToString("dd/MM/yyyy")</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
-        <!-- Review Filters -->
-        <div class="chips" style="margin:14px 0;">
-            <a class="chip @(string.IsNullOrEmpty(currentStar) ? "on" : "")"
-               asp-controller="Products" asp-action="Details" asp-route-id="@Model.Product.Id"
-               asp-route-sort="@currentSort"
-               asp-route-hasImages="@(currentHasImages ? "true" : "")">
-                Mọi sao
-            </a>
-            @foreach (var starVal in new[] { "5", "4", "3", "2", "1" })
-            {
-                <a class="chip @(currentStar == starVal ? "on" : "")"
-                   asp-controller="Products" asp-action="Details" asp-route-id="@Model.Product.Id"
-                   asp-route-star="@starVal"
-                   asp-route-sort="@currentSort"
-                   asp-route-hasImages="@(currentHasImages ? "true" : "")">
-                    @starVal sao
-                </a>
-            }
-            <a class="chip @(currentHasImages ? "on" : "")"
-               asp-controller="Products" asp-action="Details" asp-route-id="@Model.Product.Id"
-               asp-route-star="@currentStar"
-               asp-route-sort="@currentSort"
-               asp-route-hasImages="@(currentHasImages ? "" : "true")">
-                Có ảnh
-            </a>
-            <a class="chip @(currentSort == "newest" ? "on" : "")"
-               asp-controller="Products" asp-action="Details" asp-route-id="@Model.Product.Id"
-               asp-route-star="@currentStar"
-               asp-route-sort="newest"
-               asp-route-hasImages="@(currentHasImages ? "true" : "")">
-                Mới nhất
-            </a>
-            <a class="chip @(currentSort == "rating" ? "on" : "")"
-               asp-controller="Products" asp-action="Details" asp-route-id="@Model.Product.Id"
-               asp-route-star="@currentStar"
-               asp-route-sort="rating"
-               asp-route-hasImages="@(currentHasImages ? "true" : "")">
-                Theo sao
+        <!-- Widget 2: Phân Bố Số Sao (Star Distribution) -->
+        @if (hasReviews && Model.Product.StarDistribution != null)
+        {
+            var dist = Model.Product.StarDistribution;
+            var total = Math.Max(1, Model.Product.TotalReviews);
+
+            <div class="widget-card">
+                <div class="widget-header">
+                    <h3 class="widget-title">Phân Bố Đánh Giá</h3>
+                    <span class="muted text-xs">@Model.Product.TotalReviews lượt</span>
+                </div>
+                <div class="stack" style="gap:8px;">
+                    @for (int star = 5; star >= 1; star--)
+                    {
+                        var count = star switch { 5 => dist.Star5, 4 => dist.Star4, 3 => dist.Star3, 2 => dist.Star2, _ => dist.Star1 };
+                        var pct = (int)Math.Round((double)count / total * 100);
+                        <div class="row" style="gap:8px; font-size:12.5px; align-items:center;">
+                            <span style="width:42px; font-weight:600;">@star sao</span>
+                            <div style="flex:1; height:8px; background:#e2e8f0; border-radius:999px; overflow:hidden;">
+                                <div style="height:100%; width:@pct%; background:@(star >= 4 ? "#16a34a" : star == 3 ? "#f59e0b" : "#dc2626"); border-radius:999px;"></div>
+                            </div>
+                            <span class="muted text-xs" style="width:30px; text-align:right;">@count</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Widget 3: Kêu gọi đánh giá -->
+        <div class="widget-card text-center" style="padding:22px 18px;">
+            <h4 style="margin:0 0 8px; font-size:15px; color:var(--ink);">Bạn đã trải nghiệm sản phẩm này?</h4>
+            <p class="muted text-xs" style="margin:0 0 16px;">Đóng góp ý kiến khách quan giúp người tiêu dùng khác ra quyết định đúng đắn.</p>
+            <a class="btn" asp-controller="Reviews" asp-action="Create" asp-route-productId="@Model.Product.Id" style="width:100%;">
+                + Viết Đánh Giá Ngay
             </a>
         </div>
-
-        <!-- Review List -->
-        @if (Model.Reviews.Items.Count > 0)
-        {
-            <div class="stack">
-                @foreach (var review in Model.Reviews.Items)
-                {
-                    <partial name="_ReviewCard" model="review" />
-                }
-            </div>
-            <partial name="_Pager" model="(Model.Reviews.Page, Model.Reviews.TotalPages)" />
-        }
-        else
-        {
-            <div class="empty panel pad" style="text-align:center; padding:36px;">
-                Chưa có bài review nào khớp với bộ lọc đã chọn.
-            </div>
-        }
-    </section>
+    </aside>
 </div>

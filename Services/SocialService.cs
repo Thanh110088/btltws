@@ -9,6 +9,7 @@ public interface ISocialService
 {
     Task<CommentDto> AddCommentAsync(int reviewId, int userId, CreateCommentRequest request, CancellationToken cancellationToken);
     Task<PagedResult<CommentDto>> GetCommentsAsync(int reviewId, PagingQuery query, CancellationToken cancellationToken);
+    Task DeleteCommentAsync(int commentId, int userId, bool isAdmin, CancellationToken cancellationToken);
     Task<VoteResultDto> VoteAsync(int reviewId, int userId, string voteType, CancellationToken cancellationToken);
     Task<BookmarkDto> BookmarkAsync(int reviewId, int userId, string baseUrl, CancellationToken cancellationToken);
     Task RemoveBookmarkAsync(int reviewId, int userId, CancellationToken cancellationToken);
@@ -105,6 +106,18 @@ public class SocialService : ISocialService
                 CreatedAt = row.CreatedAt
             }).ToList()
         };
+    }
+
+    public async Task DeleteCommentAsync(int commentId, int userId, bool isAdmin, CancellationToken cancellationToken)
+    {
+        var comment = await _db.Comments.FirstOrDefaultAsync(c => c.Id == commentId, cancellationToken)
+            ?? throw new AppException(StatusCodes.Status404NotFound, "Không tìm thấy bình luận.");
+
+        if (comment.UserId != userId && !isAdmin)
+            throw new AppException(StatusCodes.Status403Forbidden, "Bạn không có quyền xóa bình luận này.");
+
+        _db.Comments.Remove(comment);
+        await _db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<VoteResultDto> VoteAsync(int reviewId, int userId, string voteType, CancellationToken cancellationToken)

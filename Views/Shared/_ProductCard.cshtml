@@ -1,39 +1,111 @@
-@model ProductListItemDto
+﻿@model ProductListItemDto
 @{
-    var hues = new[] { "#0e7c74", "#b7791f", "#c2410c", "#3f6212", "#1d4ed8", "#7c3aed" };
-    var firstChar = !string.IsNullOrWhiteSpace(Model.Name) ? Model.Name.Trim()[0] : '?';
-    var hue = hues[Math.Abs(firstChar) % hues.Length];
-    var roundedRating = (int)Math.Round(Model.AvgRating);
+    var hasReviews = Model.TotalReviews > 0;
+    var ratingDisplay = Model.AvgRating > 0 ? Model.AvgRating.ToString("0.0") : (Model.LatestRating.HasValue ? Model.LatestRating.Value.ToString("0.0") : null);
+    var hasAuthor = !string.IsNullOrWhiteSpace(Model.AuthorName);
+    var avatarInitial = hasAuthor ? Model.AuthorName!.Trim().Substring(0, 1).ToUpper() : null;
+    var reviewDate = Model.LatestReviewCreatedAt?.ToString("dd/MM/yyyy");
+    var hasPros = !string.IsNullOrWhiteSpace(Model.LatestPros);
+    var hasCons = !string.IsNullOrWhiteSpace(Model.LatestCons);
 }
 
-<article class="card product">
-    <a class="cover" asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id">
-        <div class="thumb" style="@(string.IsNullOrEmpty(Model.ImageUrl) ? $"background:{hue}" : "")">
-            @if (!string.IsNullOrEmpty(Model.ImageUrl))
-            {
-                <img src="@Model.ImageUrl" alt="@Model.Name" />
-            }
-            else
-            {
-                <span>@char.ToUpper(firstChar)</span>
-            }
-        </div>
-        <div class="product-body">
-            <p class="kicker">@Model.Brand · @Model.CategoryName</p>
-            <h3>@Model.Name</h3>
-            <p class="price">@Model.Price.ToString("N0") ₫</p>
-            <p class="meta">
-                <span class="stars" aria-label="@Model.AvgRating trên 5 sao">
-                    @for (int i = 1; i <= 5; i++)
-                    {
-                        <svg class="star @(i <= roundedRating ? "on" : "")" viewBox="0 0 20 20" aria-hidden="true">
-                            <path d="M10 1.8 12.4 7l5.6.5-4.2 3.7 1.3 5.5L10 14.2 4.9 16.7 6.2 11.2 2 7.5 7.6 7z" />
-                        </svg>
-                    }
-                </span>
-                <span>@Model.AvgRating.ToString("0.0") · @Model.TotalReviews review</span>
-            </p>
-        </div>
+<article class="review-card-vertical">
+    <a asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id" class="rc-thumb-container">
+        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+        {
+            <img src="@Model.ImageUrl" alt="@Model.Name" loading="lazy" />
+        }
+        else
+        {
+            <div class="rc-thumb-placeholder">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <rect x="5" y="2" width="14" height="20" rx="3"></rect>
+                    <line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"></line>
+                </svg>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.CategoryName))
+        {
+            <span class="rc-category-tag">@Model.CategoryName</span>
+        }
+
+        @if (hasReviews && ratingDisplay != null)
+        {
+            <span class="rc-rating-badge">★ @ratingDisplay</span>
+        }
     </a>
-    <a class="btn write-link" asp-controller="Reviews" asp-action="Create" asp-route-productId="@Model.Id">Viết đánh giá</a>
+
+    <div class="rc-body">
+        <div class="rc-brand-price">
+            @if (!string.IsNullOrEmpty(Model.Brand))
+            {
+                <span>@Model.Brand • </span>
+            }
+            <strong>@Model.Price.ToString("N0") đ</strong>
+        </div>
+
+        <a asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id">
+            <h3 class="rc-title" title="@Model.Name">
+                @Model.Name
+            </h3>
+        </a>
+
+        @if (hasPros || hasCons)
+        {
+            <div class="rc-pills">
+                @if (hasPros)
+                {
+                    <div class="rc-pill rc-pill-pros" title="@Model.LatestPros">
+                        <span>✔</span> <span>@Model.LatestPros</span>
+                    </div>
+                }
+                @if (hasCons)
+                {
+                    <div class="rc-pill rc-pill-cons" title="@Model.LatestCons">
+                        <span>✖</span> <span>@Model.LatestCons</span>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (hasReviews && hasAuthor)
+        {
+            <div class="rc-footer">
+                <div class="rc-author">
+                    <span class="rc-avatar">@avatarInitial</span>
+                    <div class="rc-author-info">
+                        <span class="rc-author-name">@Model.AuthorName</span>
+                        @if (reviewDate != null)
+                        {
+                            <span class="rc-author-date">@reviewDate</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="rc-stats">
+                    @if (Model.UpvoteCount > 0)
+                    {
+                        <span class="rc-stat-item" title="Lượt thích">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            <span>@Model.UpvoteCount</span>
+                        </span>
+                    }
+                    @if (Model.CommentCount > 0)
+                    {
+                        <span class="rc-stat-item comment" title="Bình luận">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            <span>@Model.CommentCount</span>
+                        </span>
+                    }
+                </div>
+            </div>
+        }
+        else if (hasReviews)
+        {
+            <div class="rc-footer" style="justify-content:flex-end;">
+                <span class="muted text-xs">@Model.TotalReviews bài đánh giá</span>
+            </div>
+        }
+    </div>
 </article>

@@ -1,22 +1,46 @@
 :root {
-  --bg: #f6f3ee;
-  --bg-2: #efeae3;
+  --primary: #ea580c;
+  --primary-hover: #c2410c;
+  --primary-light: #fff7ed;
+  --primary-gradient: linear-gradient(105deg, #a21caf 0%, #db2777 22%, #f97316 65%, #ea580c 100%);
+  --header-gradient: linear-gradient(100deg, #9333ea 0%, #db2777 25%, #f97316 65%, #ea580c 100%);
+  --bg: #f8fafc;
+  --bg-2: #f1f5f9;
   --surface: #ffffff;
-  --ink: #1f1a17;
-  --muted: #6f675f;
-  --line: #e6dfd6;
-  --teal: #0e7c74;
-  --teal-dark: #0b635c;
-  --teal-soft: #e7f5f3;
-  --amber: #a16207;
-  --amber-soft: #fff6e4;
-  --pros: #1b7a4a;
-  --pros-soft: #e8f6ee;
-  --cons: #c2410c;
-  --cons-soft: #fff1e8;
-  --danger: #b42318;
-  --danger-soft: #fdecec;
-  --shadow: 0 12px 32px rgba(70, 52, 32, 0.06);
-  --radius: 18px;
-  --font: "Be Vietnam Pro", "Segoe UI", sans-serif;
+  --ink: #0f172a;
+  --text: #1e293b;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  
+  --pros: #16a34a;
+  --pros-dark: #15803d;
+  --pros-soft: #f0fdf4;
+  --pros-border: #bbf7d0;
+  
+  --cons: #dc2626;
+  --cons-dark: #b91c1c;
+  --cons-soft: #fef2f2;
+  --cons-border: #fecaca;
+  
+  --warn: #d97706;
+  --warn-soft: #fffbeb;
+  --verified: #0284c7;
+  --verified-soft: #e0f2fe;
+  
+  --star: #f59e0b;
+  --star-off: #cbd5e1;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 30px -4px rgba(15, 23, 42, 0.08), 0 8px 16px -4px rgba(15, 23, 42, 0.04);
+  --shadow-hover: 0 14px 34px -4px rgba(234, 88, 12, 0.15), 0 8px 16px -4px rgba(15, 23, 42, 0.06);
+  
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 9999px;
+  
+  --font: "Plus Jakarta Sans", "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }

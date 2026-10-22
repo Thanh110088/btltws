@@ -1,101 +1,156 @@
-@model ReviewFormViewModel
+﻿@model ReviewFormViewModel
 @{
     ViewData["Title"] = $"Chỉnh sửa đánh giá {Model.ProductName}";
 }
 
-<section class="auth-card" style="max-width:720px; margin:20px auto;">
-    <p class="kicker">Chỉnh sửa bài đánh giá</p>
-    <h1 style="margin:4px 0;">@Model.ProductName</h1>
-    <p class="muted">@Model.ProductBrand — Cập nhật điểm hài lòng và hạn chế thực tế rồi lưu lại.</p>
+<!-- Stepper Wizard -->
+<div class="stepper">
+    <div class="step-item completed">
+        <span class="step-circle">✓</span>
+        <span>1. Chọn sản phẩm</span>
+    </div>
+    <div class="step-divider" style="background:#16a34a;"></div>
+    <div class="step-item active">
+        <span class="step-circle">2</span>
+        <span>Cập nhật đánh giá</span>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-item">
+        <span class="step-circle">3</span>
+        <span>Lưu & Xuất bản</span>
+    </div>
+</div>
+
+<div class="form-card">
+    <div class="form-header">
+        <h1 class="form-title">Chỉnh sửa bài đánh giá: @Model.ProductName</h1>
+        <p class="form-subtitle">@Model.ProductBrand — Cập nhật điểm hài lòng và hạn chế thực tế để cộng đồng có thêm thông tin đa chiều.</p>
+    </div>
 
     <form class="form" asp-controller="Reviews" asp-action="Edit" asp-route-id="@Model.ReviewId" method="post" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="ProductId" />
         <input type="hidden" asp-for="ReviewId" />
-        <div asp-validation-summary="ModelOnly" class="panel" style="background:#fce8e6; color:#c5221f; padding:10px; margin-bottom:12px; border-radius:6px;"></div>
+        <div asp-validation-summary="ModelOnly" class="panel" style="background:#fef2f2; color:#b91c1c; padding:12px; margin-bottom:16px; border-radius:10px;"></div>
 
-        <!-- Star Picker -->
-        <div>
-            <span class="label" style="display:block; font-weight:600; margin-bottom:6px;">Số sao đánh giá</span>
+        <!-- Star Rating -->
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label">
+                Đánh giá tổng quan: <strong id="ratingText" style="color:var(--primary); font-size:15px;">@Model.Rating.ToString("0.0") / 5.0</strong>
+            </label>
             <input type="hidden" asp-for="Rating" id="ratingInput" />
-            <div id="star-picker" style="display:flex; gap:6px;">
-                @for (int n = 1; n <= 5; n++)
-                {
-                    <button class="star-btn" type="button" data-val="@n" onclick="setRating(@n)" aria-label="@n sao"
-                            style="background:none; border:none; cursor:pointer; padding:4px;">
-                        <svg class="star @(n <= Model.Rating ? "on" : "")" viewBox="0 0 20 20" aria-hidden="true" style="width:28px; height:28px;">
-                            <path d="M10 1.8 12.4 7l5.6.5-4.2 3.7 1.3 5.5L10 14.2 4.9 16.7 6.2 11.2 2 7.5 7.6 7z" />
-                        </svg>
-                    </button>
-                }
+            <div class="star-rating-row" style="margin-top:6px;">
+                <div class="stars-interactive" id="star-picker">
+                    @for (int n = 1; n <= 5; n++)
+                    {
+                        <button type="button" class="star-btn @(n <= Model.Rating ? "on" : "")" data-val="@n" onclick="setRating(@n)" aria-label="@n sao">
+                            <svg class="star @(n <= Model.Rating ? "on" : "")" style="width:32px; height:32px; fill:@(n <= Model.Rating ? "#f59e0b" : "#cbd5e1");" viewBox="0 0 20 20">
+                                <path d="M10 1.8 12.4 7l5.6.5-4.2 3.7 1.3 5.5L10 14.2 4.9 16.7 6.2 11.2 2 7.5 7.6 7z" />
+                            </svg>
+                        </button>
+                    }
+                </div>
+                <span class="muted text-sm">(Nhấp chuột vào số sao để xếp hạng lại)</span>
             </div>
-            <span asp-validation-for="Rating" style="color:var(--flaw); font-size:12px;"></span>
+            <span asp-validation-for="Rating" style="color:var(--cons); font-size:12px;"></span>
         </div>
 
-        <!-- Pros Field -->
-        <label class="field" style="margin-top:14px;">
-            <span>Điểm hài lòng (Pros) — <small class="muted">Tối thiểu 10 ký tự</small></span>
-            <textarea asp-for="Pros" required minlength="10" maxlength="4000" rows="4"></textarea>
-            <span asp-validation-for="Pros" style="color:var(--flaw); font-size:12px;"></span>
-        </label>
+        <!-- Pros & Cons Grid -->
+        <div class="form-grid-2">
+            <div class="form-group">
+                <label class="form-label" style="color:var(--pros-dark);">
+                    <span>Điểm hài lòng (Pros)</span> <span class="req">(*)</span>
+                </label>
+                <textarea class="form-control" asp-for="Pros" required minlength="10" rows="4" 
+                          style="border-color:#bbf7d0; background:#f0fdf4;"></textarea>
+                <span asp-validation-for="Pros" style="color:var(--cons); font-size:12px;"></span>
+            </div>
 
-        <!-- Cons Field -->
-        <label class="field">
-            <span>Hạn chế thực tế (Cons) — <small class="muted">Tối thiểu 10 ký tự</small></span>
-            <textarea asp-for="Cons" required minlength="10" maxlength="4000" rows="4"></textarea>
-            <span asp-validation-for="Cons" style="color:var(--flaw); font-size:12px;"></span>
-        </label>
+            <div class="form-group">
+                <label class="form-label" style="color:var(--cons-dark);">
+                    <span>Hạn chế thực tế (Cons)</span> <span class="req">(*)</span>
+                </label>
+                <textarea class="form-control" asp-for="Cons" required minlength="10" rows="4" 
+                          style="border-color:#fecaca; background:#fef2f2;"></textarea>
+                <span asp-validation-for="Cons" style="color:var(--cons); font-size:12px;"></span>
+            </div>
+        </div>
 
-        <!-- Anonymous Checkbox -->
-        <label class="row" style="gap:8px; align-items:center; cursor:pointer; margin:8px 0;">
-            <input type="checkbox" asp-for="IsAnonymous" style="width:18px; height:18px;" />
-            <span>Đăng bài ẩn danh</span>
-        </label>
+        <!-- Anonymous -->
+        <div class="row" style="margin: 12px 0;">
+            <label class="filter-checkbox-label">
+                <input type="checkbox" asp-for="IsAnonymous" />
+                <span>Đăng bài ẩn danh</span>
+            </label>
+        </div>
 
         <!-- Existing Images -->
         @if (Model.ExistingImageUrls != null && Model.ExistingImageUrls.Count > 0)
         {
-            <div style="margin:12px 0;">
-                <span class="label" style="display:block; font-weight:600; margin-bottom:6px;">Ảnh hiện tại</span>
-                <div class="thumbs" id="existingImagesList">
+            <div style="margin: 16px 0;">
+                <label class="form-label">Ảnh minh chứng hiện tại</label>
+                <div class="row" style="gap:10px; flex-wrap:wrap; margin-top:8px;" id="existingImagesList">
                     @for (int i = 0; i < Model.ExistingImageUrls.Count; i++)
                     {
-                        var imgUrl = Model.ExistingImageUrls[i];
-                        <span class="thumb-mini" style="display:inline-grid; place-items:end; position:relative; margin-right:8px;">
-                            <input type="hidden" name="ExistingImageUrls" value="@imgUrl" />
-                            <img src="@imgUrl" alt="" style="width:70px; height:70px; object-fit:cover; border-radius:6px;" />
-                            <button type="button" onclick="this.parentElement.remove()" style="position:absolute; top:-6px; right:-6px; background:#c5221f; color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-weight:bold; line-height:1;">×</button>
-                        </span>
+                        var url = Model.ExistingImageUrls[i];
+                        <div class="existing-img-card" style="position:relative; width:90px; height:90px; border-radius:8px; overflow:hidden; border:1px solid var(--border);">
+                            <img src="@url" alt="Ảnh review" style="width:100%; height:100%; object-fit:cover;" />
+                            <input type="hidden" name="ExistingImageUrls" value="@url" />
+                            <button type="button" onclick="this.parentElement.remove()" 
+                                    style="position:absolute; top:4px; right:4px; background:rgba(220,38,38,0.85); color:white; border:0; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center;">
+                                ✕
+                            </button>
+                        </div>
                     }
                 </div>
             </div>
         }
 
         <!-- Upload More Images -->
-        <label class="field">
-            <span>Tải thêm ảnh minh chứng mới</span>
-            <input name="files" type="file" accept="image/*" multiple />
-        </label>
+        <div class="form-group">
+            <label class="form-label">Tải thêm ảnh minh chứng mới</label>
+            <div class="dropzone" onclick="document.getElementById('fileUploadInput').click()">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.8" style="margin-bottom:6px;">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <div class="dropzone-title">Nhấp vào đây để chọn thêm ảnh từ thiết bị</div>
+                <div class="dropzone-sub">Định dạng JPG, PNG (tối đa thêm 6 ảnh)</div>
+                <input id="fileUploadInput" name="files" type="file" accept="image/*" multiple style="display:none;" />
+            </div>
+        </div>
 
-        <div class="row" style="margin-top:16px; gap:10px;">
-            <button class="btn" type="submit" style="min-width:140px;">Lưu thay đổi</button>
-            <a class="btn-ghost" asp-controller="Products" asp-action="Details" asp-route-id="@Model.ProductId">Hủy</a>
+        <!-- Action Buttons -->
+        <div class="row-between" style="margin-top: 24px; border-top:1px solid var(--border-light); padding-top:20px;">
+            <a class="btn-ghost" asp-controller="Reviews" asp-action="Mine">
+                Hủy thay đổi
+            </a>
+            <button class="btn" type="submit" style="padding:12px 28px;">
+                Lưu bài đánh giá
+            </button>
         </div>
     </form>
-</section>
+</div>
 
 @section Scripts {
     <script>
         function setRating(val) {
             document.getElementById("ratingInput").value = val;
+            const textEl = document.getElementById("ratingText");
+            if (textEl) {
+                textEl.textContent = val + ".0 / 5.0";
+            }
             const buttons = document.querySelectorAll("#star-picker .star-btn");
             buttons.forEach(btn => {
                 const btnVal = Number(btn.dataset.val);
-                const star = btn.querySelector(".star");
+                const svg = btn.querySelector("svg");
                 if (btnVal <= val) {
-                    star.classList.add("on");
+                    btn.classList.add("on");
+                    svg.style.fill = "#f59e0b";
                 } else {
-                    star.classList.remove("on");
+                    btn.classList.remove("on");
+                    svg.style.fill = "#cbd5e1";
                 }
             });
         }

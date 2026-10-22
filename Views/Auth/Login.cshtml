@@ -1,17 +1,20 @@
-@model LoginRequest
+﻿@model LoginRequest
 @{
     ViewData["Title"] = "Đăng nhập";
     var returnUrl = ViewBag.ReturnUrl as string;
     var locked = Context.Request.Query["locked"] == "1";
 }
 
-<section class="auth-card" style="max-width:440px; margin:40px auto;">
-    <p class="kicker">Chào mừng trở lại</p>
-    <h1>Đăng nhập</h1>
+<div class="form-card" style="max-width:460px; margin:40px auto;">
+    <div class="form-header text-center">
+        <span class="hero-tag">THÀNH VIÊN REVIEWNOW</span>
+        <h1 class="form-title" style="margin-top:4px;">Đăng nhập</h1>
+        <p class="form-subtitle">Chào mừng bạn quay lại với cộng đồng người tiêu dùng thông thái.</p>
+    </div>
 
     @if (locked)
     {
-        <div class="panel" style="background:#fce8e6; color:#c5221f; padding:10px; margin-bottom:14px; border-radius:6px; font-weight:500;">
+        <div class="panel" style="background:#fef2f2; color:#b91c1c; border-left:4px solid #dc2626; padding:12px; margin-bottom:16px; border-radius:8px; font-weight:600;">
             ✕ Tài khoản của bạn đã bị khóa bởi Quản trị viên.
         </div>
     }
@@ -19,40 +22,40 @@
     <form class="form" id="loginForm" asp-controller="Auth" asp-action="Login" method="post">
         @Html.AntiForgeryToken()
         <input type="hidden" name="returnUrl" value="@returnUrl" />
-        <div asp-validation-summary="ModelOnly" class="panel" style="background:#fce8e6; color:#c5221f; padding:10px; margin-bottom:12px; border-radius:6px;"></div>
+        <div asp-validation-summary="ModelOnly" class="panel" style="background:#fef2f2; color:#b91c1c; padding:10px; margin-bottom:14px; border-radius:8px;"></div>
 
-        <label class="field">
-            <span>Email</span>
-            <input asp-for="Email" id="loginEmail" type="email" required placeholder="name@domain.com" />
-            <span asp-validation-for="Email" style="color:var(--flaw); font-size:12px;"></span>
-        </label>
+        <div class="form-group">
+            <label class="form-label">Email tài khoản</label>
+            <input class="form-control" asp-for="Email" id="loginEmail" type="email" required placeholder="name@domain.com" />
+            <span asp-validation-for="Email" style="color:var(--cons); font-size:12px;"></span>
+        </div>
 
-        <label class="field">
-            <span>Mật khẩu</span>
-            <input asp-for="Password" id="loginPassword" type="password" required placeholder="••••••••" />
-            <span asp-validation-for="Password" style="color:var(--flaw); font-size:12px;"></span>
-        </label>
+        <div class="form-group">
+            <label class="form-label">Mật khẩu</label>
+            <input class="form-control" asp-for="Password" id="loginPassword" type="password" required placeholder="••••••••" />
+            <span asp-validation-for="Password" style="color:var(--cons); font-size:12px;"></span>
+        </div>
 
-        <button class="btn" type="submit" style="width:100%; margin-top:10px;">Đăng nhập</button>
+        <button class="btn" type="submit" style="width:100%; margin-top:12px; padding:12px;">Đăng nhập ngay</button>
     </form>
 
-    <!-- Quick Demo Accounts for grading & testing -->
-    <div style="margin-top:20px; padding-top:16px; border-top:1px dashed var(--border);">
-        <p class="muted" style="font-size:13px; margin-bottom:8px;">Tài khoản demo (Click để điền nhanh):</p>
-        <div class="row" style="gap:8px;">
-            <button class="btn-soft" type="button" onclick="fillAccount('admin@flawfirst.local', 'Admin@123')" style="font-size:12px; padding:6px 10px;">
-                Quản trị (Admin)
+    <!-- Quick Demo Accounts -->
+    <div style="margin-top:24px; padding-top:18px; border-top:1px dashed var(--border);">
+        <p class="muted text-center" style="font-size:12.5px; margin-bottom:10px;">Tài khoản kiểm thử nhanh (Click để điền tự động):</p>
+        <div class="row" style="gap:10px; justify-content:center;">
+            <button class="btn-soft btn-sm" type="button" onclick="fillAccount('admin@flawfirst.local', 'Admin@123')">
+                🛡️ Quản trị (Admin)
             </button>
-            <button class="btn-soft" type="button" onclick="fillAccount('user@flawfirst.local', 'User@123')" style="font-size:12px; padding:6px 10px;">
-                Người dùng (User)
+            <button class="btn-soft btn-sm" type="button" onclick="fillAccount('user@flawfirst.local', 'User@123')">
+                👤 Thành viên (User)
             </button>
         </div>
     </div>
 
-    <p class="muted" style="margin-top:16px; font-size:14px;">
-        Chưa có tài khoản? <a asp-controller="Auth" asp-action="Register">Đăng ký ngay</a>
+    <p class="muted text-center" style="margin-top:20px; font-size:13.5px;">
+        Chưa có tài khoản? <a asp-controller="Auth" asp-action="Register" style="color:var(--primary); font-weight:700;">Đăng ký miễn phí</a>
     </p>
-</section>
+</div>
 
 @section Scripts {
     <script>

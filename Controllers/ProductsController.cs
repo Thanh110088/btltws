@@ -19,11 +19,21 @@ public class ProductsController : Controller
     {
         var products = await _catalog.SearchAsync(query, cancellationToken);
         var categories = await _catalog.GetCategoriesAsync(cancellationToken);
+        var latestReviews = await _catalog.GetLatestReviewsAsync(4, cancellationToken);
+        var topReviewers = await _catalog.GetTopReviewersAsync(5, cancellationToken);
+        var hotTopics = await _catalog.GetHotTopicsAsync(cancellationToken);
+        var (totalReviews, totalMembers) = await _catalog.GetPlatformStatsAsync(cancellationToken);
+
         var model = new ProductIndexViewModel
         {
             Products = products,
             Categories = categories,
-            Query = query
+            Query = query,
+            LatestReviews = latestReviews,
+            TopReviewers = topReviewers,
+            HotTopics = hotTopics,
+            TotalReviews = totalReviews,
+            TotalMembers = totalMembers
         };
         return View(model);
     }

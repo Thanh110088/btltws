@@ -1,22 +1,41 @@
-@model ProductPickerViewModel
+﻿@model ProductPickerViewModel
 @{
     ViewData["Title"] = "Chọn sản phẩm để đánh giá";
 }
 
-<section class="auth-card" style="max-width:760px; margin:20px auto;">
-    <p class="kicker">Viết đánh giá</p>
-    <h1>Chọn sản phẩm</h1>
-    <p class="muted">Chọn sản phẩm đã có trong danh mục hoặc thêm sản phẩm mới để bắt đầu bóc tách Pros & Cons.</p>
+<!-- Stepper (Image 3) -->
+<div class="stepper">
+    <div class="step-item active">
+        <span class="step-circle">1</span>
+        <span>Chọn sản phẩm</span>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-item">
+        <span class="step-circle">2</span>
+        <span>Viết đánh giá & Chấm điểm</span>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-item">
+        <span class="step-circle">3</span>
+        <span>Minh chứng & Xuất bản</span>
+    </div>
+</div>
+
+<section class="form-card" style="max-width:800px; margin:0 auto;">
+    <div class="form-header">
+        <h1 class="form-title">Chọn sản phẩm / dịch vụ cần đánh giá</h1>
+        <p class="form-subtitle">Tìm kiếm sản phẩm đã có trong hệ thống hoặc thêm sản phẩm mới nếu chưa có.</p>
+    </div>
 
     <!-- Search Form -->
-    <form class="search" asp-controller="Reviews" asp-action="Create" method="get" style="max-width:none; margin:16px 0;">
-        <input name="keyword" value="@Model.Keyword" placeholder="Tìm sản phẩm để đánh giá..." aria-label="Tìm sản phẩm" />
-        <button type="submit">Tìm</button>
+    <form class="row" asp-controller="Reviews" asp-action="Create" method="get" style="margin-bottom:20px; gap:8px;">
+        <input class="form-control" name="keyword" value="@Model.Keyword" placeholder="Nhập tên sản phẩm, thương hiệu (iPhone, MacBook, Cà phê...)" style="flex:1;" />
+        <button class="btn" type="submit">Tìm kiếm</button>
     </form>
 
-    <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <span class="muted">Không tìm thấy sản phẩm bạn muốn review?</span>
-        <a class="btn-soft" asp-controller="Products" asp-action="Create" asp-route-name="@Model.Keyword">
+    <div class="row-between" style="margin-bottom:16px;">
+        <span class="muted text-sm">Không tìm thấy sản phẩm bạn muốn đánh giá?</span>
+        <a class="btn-soft btn-sm" asp-controller="Products" asp-action="Create" asp-route-name="@Model.Keyword">
             + Thêm sản phẩm mới
         </a>
     </div>
@@ -27,13 +46,13 @@
         <div class="stack" style="gap:10px;">
             @foreach (var p in Model.Products.Items)
             {
-                <a class="card pad row pick" asp-controller="Reviews" asp-action="Create" asp-route-productId="@p.Id"
-                   style="text-decoration:none; color:inherit; justify-content:space-between; align-items:center; transition:background 0.2s;">
+                <a class="card pad row-between" asp-controller="Reviews" asp-action="Create" asp-route-productId="@p.Id"
+                   style="transition:border-color 0.2s, transform 0.15s; cursor:pointer;">
                     <div>
-                        <strong style="font-size:16px; display:block; color:var(--text);">@p.Name</strong>
-                        <span class="muted" style="font-size:13px;">@p.Brand · @p.CategoryName · @p.Price.ToString("N0") ₫</span>
+                        <strong style="font-size:15.5px; display:block; color:var(--ink);">@p.Name</strong>
+                        <span class="muted text-sm">@p.Brand · @p.CategoryName · <span style="color:var(--primary); font-weight:700;">@p.Price.ToString("N0") đ</span></span>
                     </div>
-                    <span class="btn-ghost" style="pointer-events:none;">Chọn ›</span>
+                    <span class="btn-primary btn-sm">Viết đánh giá ›</span>
                 </a>
             }
         </div>
@@ -41,10 +60,10 @@
     }
     else
     {
-        <div class="panel empty pad" style="text-align:center; padding:32px;">
+        <div class="panel empty pad text-center" style="padding:40px 16px;">
             <p>Chưa có sản phẩm nào khớp với từ khóa "@Model.Keyword".</p>
-            <a class="btn" asp-controller="Products" asp-action="Create" asp-route-name="@Model.Keyword">
-                Thêm sản phẩm "@Model.Keyword" ngay
+            <a class="btn" asp-controller="Products" asp-action="Create" asp-route-name="@Model.Keyword" style="margin-top:10px;">
+                Thêm sản phẩm mới ngay
             </a>
         </div>
     }

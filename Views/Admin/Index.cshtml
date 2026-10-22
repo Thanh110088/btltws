@@ -1,227 +1,791 @@
-@model AdminDashboardViewModel
+﻿@model AdminDashboardViewModel
 @{
-    ViewData["Title"] = "Quản trị hệ thống";
+    ViewData["Title"] = "Trung tâm Quản trị";
+    var currentTab = Model.Tab ?? "overview";
 }
 
-<div class="section-head row" style="justify-content:space-between; align-items:center; margin-bottom:20px;">
-    <div>
-        <p class="kicker">Hệ thống quản trị</p>
-        <h1 style="margin:4px 0 0 0;">Bảng điều khiển Quản trị viên</h1>
-    </div>
-    <span class="badge" style="font-size:14px; padding:6px 12px;">Vai trò: Quản trị (Admin)</span>
-</div>
+<div class="admin-page-wrap" style="margin-bottom: 40px;">
+    <!-- Admin Header -->
+    <div class="row-between" style="align-items:flex-start; margin-bottom: 24px; flex-wrap:wrap; gap:16px;">
+        <div>
+            <div class="row" style="gap:8px; align-items:center; margin-bottom:4px;">
+                <span class="badge" style="background:#ea580c; color:white; font-weight:700; font-size:11px; padding:3px 8px;">ADMINISTRATOR</span>
+                <span class="muted text-xs">Hệ thống điều hành và kiểm duyệt ReviewNow</span>
+            </div>
+            <h1 style="margin:0; font-size:26px; color:var(--ink);">Trung Tâm Quản Trị Hệ Thống</h1>
+        </div>
 
-<!-- Tabs -->
-<div class="tabs" style="display:flex; gap:8px; margin-bottom:20px;">
-    <a class="chip @(Model.Tab == "reports" ? "on" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="reports">
-        Kiểm duyệt báo cáo
-    </a>
-    <a class="chip @(Model.Tab == "users" ? "on" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="users">
-        Quản lý người dùng
-    </a>
-    <a class="chip @(Model.Tab == "categories" ? "on" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="categories">
-        Quản lý ngành hàng
-    </a>
-</div>
-
-<!-- TAB 1: REPORTS -->
-@if (Model.Tab == "reports")
-{
-    <div class="chips" style="margin-bottom:16px;">
-        @foreach (var s in new[] { ("Pending", "Đang chờ"), ("Resolved", "Đã xử lý"), ("Dismissed", "Bỏ qua"), ("All", "Tất cả") })
-        {
-            <a class="chip @(Model.Status == s.Item1 ? "on" : "")"
-               asp-controller="Admin" asp-action="Index" asp-route-tab="reports" asp-route-status="@s.Item1">
-                @s.Item2
+        <div class="row" style="gap:10px; align-items:center;">
+            <a class="btn-ghost" asp-controller="Products" asp-action="Index" style="font-size:13px; padding:7px 14px;">
+                ← Về trang chủ
             </a>
-        }
+            <a class="btn" href="#new-product-box" onclick="switchToTab('products', true)" style="font-size:13px; padding:7px 16px;">
+                + Thêm sản phẩm mới
+            </a>
+        </div>
     </div>
 
-    @if (Model.Reports != null && Model.Reports.Items.Count > 0)
+    <!-- 5 Summary KPI Metric Cards -->
+    <div class="grid-4" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom: 24px;">
+        <div class="card pad" style="background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--primary); padding:16px;">
+            <div class="row-between" style="align-items:center;">
+                <span class="muted text-xs" style="font-weight:700; text-transform:uppercase;">Tổng thành viên</span>
+                <span style="font-size:20px;">👥</span>
+            </div>
+            <div style="font-size:26px; font-weight:800; color:var(--ink); margin-top:6px;">@Model.Stats.TotalUsers.ToString("N0")</div>
+            <a asp-controller="Admin" asp-action="Index" asp-route-tab="users" class="muted text-xs" style="color:var(--primary); font-weight:600; margin-top:4px; display:inline-block;">Quản lý người dùng →</a>
+        </div>
+
+        <div class="card pad" style="background:var(--surface); border:1px solid var(--border); border-left:4px solid #0284c7; padding:16px;">
+            <div class="row-between" style="align-items:center;">
+                <span class="muted text-xs" style="font-weight:700; text-transform:uppercase;">Tổng sản phẩm</span>
+                <span style="font-size:20px;">📦</span>
+            </div>
+            <div style="font-size:26px; font-weight:800; color:var(--ink); margin-top:6px;">@Model.Stats.TotalProducts.ToString("N0")</div>
+            <a asp-controller="Admin" asp-action="Index" asp-route-tab="products" class="muted text-xs" style="color:#0284c7; font-weight:600; margin-top:4px; display:inline-block;">Quản lý danh mục hàng →</a>
+        </div>
+
+        <div class="card pad" style="background:var(--surface); border:1px solid var(--border); border-left:4px solid #16a34a; padding:16px;">
+            <div class="row-between" style="align-items:center;">
+                <span class="muted text-xs" style="font-weight:700; text-transform:uppercase;">Tổng bài đánh giá</span>
+                <span style="font-size:20px;">✍️</span>
+            </div>
+            <div style="font-size:26px; font-weight:800; color:var(--ink); margin-top:6px;">@Model.Stats.TotalReviews.ToString("N0")</div>
+            <a asp-controller="Admin" asp-action="Index" asp-route-tab="reviews" class="muted text-xs" style="color:#16a34a; font-weight:600; margin-top:4px; display:inline-block;">Kiểm duyệt đánh giá →</a>
+        </div>
+
+        <div class="card pad" style="background:var(--surface); border:1px solid var(--border); border-left:4px solid #8b5cf6; padding:16px;">
+            <div class="row-between" style="align-items:center;">
+                <span class="muted text-xs" style="font-weight:700; text-transform:uppercase;">Ngành hàng & Thảo luận</span>
+                <span style="font-size:20px;">🏷️</span>
+            </div>
+            <div style="font-size:26px; font-weight:800; color:var(--ink); margin-top:6px;">
+                @Model.Stats.TotalCategories <span style="font-size:14px; font-weight:500; color:var(--muted);">ngành / @Model.Stats.TotalComments cmt</span>
+            </div>
+            <a asp-controller="Admin" asp-action="Index" asp-route-tab="categories" class="muted text-xs" style="color:#8b5cf6; font-weight:600; margin-top:4px; display:inline-block;">Quản lý ngành hàng →</a>
+        </div>
+
+        <div class="card pad" style="background:@(Model.Stats.PendingReports > 0 ? "#fff1f2" : "var(--surface)"); border:1px solid @(Model.Stats.PendingReports > 0 ? "#fecdd3" : "var(--border)"); border-left:4px solid @(Model.Stats.PendingReports > 0 ? "#e11d48" : "var(--border)"); padding:16px;">
+            <div class="row-between" style="align-items:center;">
+                <span class="muted text-xs" style="font-weight:700; text-transform:uppercase; color:@(Model.Stats.PendingReports > 0 ? "#be123c" : "var(--muted)");">Báo cáo chờ duyệt</span>
+                <span style="font-size:20px;">🚨</span>
+            </div>
+            <div style="font-size:26px; font-weight:800; color:@(Model.Stats.PendingReports > 0 ? "#be123c" : "var(--ink)"); margin-top:6px;">
+                @Model.Stats.PendingReports.ToString("N0")
+            </div>
+            <a asp-controller="Admin" asp-action="Index" asp-route-tab="reports" class="muted text-xs" style="color:@(Model.Stats.PendingReports > 0 ? "#e11d48" : "var(--primary)"); font-weight:600; margin-top:4px; display:inline-block;">
+                @(Model.Stats.PendingReports > 0 ? "Xử lý vi phạm ngay →" : "Xem lịch sử xử lý →")
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar for Tabs -->
+    <div class="category-navbar" style="margin-bottom: 24px; padding: 6px; background:var(--surface); border:1px solid var(--border); border-radius:12px;">
+        <div class="nav-pills" style="gap:6px; flex-wrap:wrap;">
+            <a class="nav-pill @(currentTab == "overview" ? "active" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="overview">
+                📊 Tổng quan
+            </a>
+            <a class="nav-pill @(currentTab == "reports" ? "active" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="reports">
+                🚨 Báo cáo vi phạm @(Model.Stats.PendingReports > 0 ? $"({Model.Stats.PendingReports})" : "")
+            </a>
+            <a class="nav-pill @(currentTab == "products" ? "active" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="products">
+                📦 Quản lý Sản phẩm (@Model.Stats.TotalProducts)
+            </a>
+            <a class="nav-pill @(currentTab == "reviews" ? "active" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="reviews">
+                ✍️ Quản lý Đánh giá (@Model.Stats.TotalReviews)
+            </a>
+            <a class="nav-pill @(currentTab == "users" ? "active" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="users">
+                👥 Quản lý Người dùng (@Model.Stats.TotalUsers)
+            </a>
+            <a class="nav-pill @(currentTab == "categories" ? "active" : "")" asp-controller="Admin" asp-action="Index" asp-route-tab="categories">
+                🏷️ Ngành hàng (@Model.Stats.TotalCategories)
+            </a>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         TAB 0: OVERVIEW & QUEUE
+         ========================================================================= -->
+    @if (currentTab == "overview")
     {
-        <div class="stack" style="gap:16px;">
-            @foreach (var report in Model.Reports.Items)
-            {
-                <article class="card pad" style="background:var(--surface);">
-                    <div class="row" style="justify-content:space-between; align-items:center;">
-                        <strong style="font-size:16px;">
-                            @(report.ProductName ?? report.ReviewSnapshot ?? "Bài review đã bị gỡ")
-                        </strong>
-                        <span class="badge @(report.Status == "Pending" ? "hot" : "")">@report.Status</span>
+        <div class="layout-2col" style="gap:24px;">
+            <!-- Left: Hàng đợi báo cáo chờ xử lý -->
+            <div>
+                <div class="row-between" style="margin-bottom:14px; align-items:center;">
+                    <h3 style="margin:0; font-size:17px; color:var(--ink);">🚨 Báo cáo vi phạm chờ xử lý (@(Model.Reports?.TotalItems ?? 0))</h3>
+                    <a asp-controller="Admin" asp-action="Index" asp-route-tab="reports" style="color:var(--primary); font-size:13px; font-weight:600;">Xem tất cả →</a>
+                </div>
+
+                @if (Model.Reports != null && Model.Reports.Items.Count > 0)
+                {
+                    <div class="stack" style="gap:12px;">
+                        @foreach (var report in Model.Reports.Items)
+                        {
+                            <div class="card pad" style="background:var(--surface); border:1px solid var(--border); padding:16px;">
+                                <div class="row-between" style="align-items:center; margin-bottom:8px;">
+                                    <strong style="color:var(--ink); font-size:15px;">
+                                        @(report.ProductName ?? report.ReviewSnapshot ?? "Bài review")
+                                    </strong>
+                                    <span class="badge" style="background:#fee2e2; color:#b91c1c;">Chờ xử lý</span>
+                                </div>
+                                <p style="margin:0 0 8px 0; font-size:13px; color:var(--text); line-height:1.5;">
+                                    <strong>Lý do:</strong> @report.Reason
+                                </p>
+                                <div class="muted text-xs" style="margin-bottom:12px;">
+                                    Tác giả: <strong>@(report.AuthorName ?? "Ẩn danh")</strong> · Người báo cáo: @report.ReporterName (@report.CreatedAt.ToString("dd/MM/yyyy HH:mm"))
+                                </div>
+                                <div class="row" style="gap:8px; flex-wrap:wrap;">
+                                    <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="Action" value="Hide" />
+                                        <button class="btn-soft btn-sm" type="submit">👁 Ẩn review</button>
+                                    </form>
+                                    <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài review này?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="Action" value="Delete" />
+                                        <button class="btn-danger btn-sm" type="submit">🗑 Xóa bài</button>
+                                    </form>
+                                    <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="Action" value="Ignore" />
+                                        <button class="btn-ghost btn-sm" type="submit">Bỏ qua</button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
                     </div>
-
-                    <p class="muted" style="font-size:13px; margin:4px 0 10px 0;">
-                        Người báo cáo: @report.ReporterName (@report.ReporterEmail) · @report.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                    </p>
-
-                    <div style="background:rgba(0,0,0,0.02); padding:10px 14px; border-radius:6px; margin-bottom:10px;">
-                        <strong>Lý do vi phạm:</strong> @report.Reason
+                }
+                else
+                {
+                    <div class="card pad text-center" style="background:var(--surface); padding:32px;">
+                        <span style="font-size:32px;">🎉</span>
+                        <p style="margin:8px 0 0; color:var(--ink); font-weight:600;">Tuyệt vời! Không có báo cáo vi phạm nào đang chờ xử lý.</p>
+                        <p class="muted text-xs" style="margin:4px 0 0;">Cộng đồng ReviewNow đang hoạt động rất văn minh và tích cực.</p>
                     </div>
+                }
+            </div>
 
-                    @if (!string.IsNullOrEmpty(report.Cons))
+            <!-- Right: Đánh giá mới nhất & Thao tác nhanh -->
+            <div class="stack" style="gap:20px;">
+                <!-- Widget: Đánh giá mới cập nhật -->
+                <div class="card pad" style="background:var(--surface); border:1px solid var(--border);">
+                    <div class="row-between" style="margin-bottom:14px; align-items:center;">
+                        <h3 style="margin:0; font-size:16px; color:var(--ink);">⚡ Đánh giá mới nhất</h3>
+                        <a asp-controller="Admin" asp-action="Index" asp-route-tab="reviews" style="color:var(--primary); font-size:12.5px; font-weight:600;">Xem tất cả →</a>
+                    </div>
+                    @if (Model.Reviews != null && Model.Reviews.Items.Count > 0)
                     {
-                        <div class="box cons" style="margin-bottom:12px;">
-                            <h4 style="margin:0 0 4px 0;">Cons bị phản ánh</h4>
-                            <p style="margin:0;">@report.Cons</p>
-                        </div>
-                    }
-
-                    @if (report.EvidenceImageUrls != null && report.EvidenceImageUrls.Count > 0)
-                    {
-                        <div class="thumbs" style="margin-bottom:12px;">
-                            @foreach (var url in report.EvidenceImageUrls)
+                        <div class="stack" style="gap:10px;">
+                            @foreach (var r in Model.Reviews.Items)
                             {
-                                <a href="@url" target="_blank" rel="noopener noreferrer">
-                                    <img src="@url" alt="Bằng chứng" style="max-height:80px; border-radius:4px;" />
-                                </a>
+                                <div style="padding:10px 0; border-bottom:1px solid var(--border-light); font-size:13px;">
+                                    <div class="row-between" style="align-items:center;">
+                                        <a asp-controller="Products" asp-action="Details" asp-route-id="@r.ProductId" style="font-weight:700; color:var(--ink);">
+                                            @r.ProductName
+                                        </a>
+                                        <span style="color:#f59e0b; font-weight:700;">★@r.Rating</span>
+                                    </div>
+                                    <p class="muted text-xs" style="margin:4px 0 6px; line-height:1.4;">
+                                        "@r.Pros.Substring(0, Math.Min(r.Pros.Length, 60))..."
+                                    </p>
+                                    <div class="row-between" style="align-items:center;">
+                                        <span class="muted text-xs">Bởi @r.AuthorName · @r.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                        <form asp-controller="Admin" asp-action="ToggleHideReview" asp-route-id="@r.Id" method="post" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="returnTab" value="overview" />
+                                            <button class="comment-delete-btn" type="submit" style="font-size:11px;">
+                                                @(r.IsHidden ? "Hiện lại" : "Ẩn bài")
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
                             }
                         </div>
                     }
+                </div>
 
-                    @if (report.Status == "Pending")
-                    {
-                        <div class="row" style="gap:8px; margin-top:10px; flex-wrap:wrap;">
-                            <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="Action" value="Hide" />
-                                <button class="btn-soft" type="submit">👁 Ẩn bài</button>
-                            </form>
-                            <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài review này?');">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="Action" value="Delete" />
-                                <button class="btn-danger" type="submit">🗑 Xóa bài</button>
-                            </form>
-                            <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;" onsubmit="return confirm('Hành động này sẽ ẩn bài và khóa tài khoản tác giả. Xác nhận?');">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="Action" value="Penalize" />
-                                <button class="btn-danger" type="submit">⚡ Phạt & Khóa tác giả</button>
-                            </form>
-                            <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="Action" value="Ignore" />
-                                <button class="btn-ghost" type="submit">Bỏ qua báo cáo</button>
-                            </form>
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="muted" style="font-size:13px; margin:8px 0 0 0;">
-                            ✓ Đã xử lý bằng hành động: <strong>@report.Action</strong>
-                        </p>
-                    }
-                </article>
-            }
-        </div>
-        <partial name="_Pager" model="(Model.Reports.Page, Model.Reports.TotalPages)" />
-    }
-    else
-    {
-        <div class="panel empty pad" style="text-align:center; padding:36px;">
-            Không có báo cáo nào ở trạng thái "@Model.Status".
-        </div>
-    }
-}
-
-<!-- TAB 2: USERS -->
-@if (Model.Tab == "users")
-{
-    <form class="filters" asp-controller="Admin" asp-action="Index" method="get" style="margin-bottom:16px;">
-        <input type="hidden" name="tab" value="users" />
-        <label class="field grow">
-            <span>Tìm kiếm theo tên hoặc email</span>
-            <input name="keyword" value="@Model.Keyword" placeholder="Nhập tên hoặc email người dùng..." />
-        </label>
-        <button class="btn" type="submit">Tìm</button>
-    </form>
-
-    @if (Model.Users != null && Model.Users.Items.Count > 0)
-    {
-        <div class="stack" style="gap:10px;">
-            @foreach (var user in Model.Users.Items)
-            {
-                <article class="card pad row" style="justify-content:space-between; align-items:center;">
-                    <div>
-                        <strong style="font-size:16px;">@user.FullName</strong>
-                        <div class="muted" style="font-size:13px;">@user.Email · Vai trò: <strong>@user.Role</strong> · Ngày tạo: @user.CreatedAt.ToString("dd/MM/yyyy")</div>
+                <!-- Widget: Phím tắt thao tác nhanh -->
+                <div class="card pad" style="background:linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border:1px solid #fed7aa;">
+                    <h4 style="margin:0 0 8px; color:#c2410c; font-size:15px;">Thao tác quản trị nhanh</h4>
+                    <p class="muted text-xs" style="margin:0 0 14px; color:#9a3412;">Quản lý danh mục hàng hóa, thêm ngành hàng hoặc kiểm tra tài khoản người dùng.</p>
+                    <div class="row" style="gap:8px; flex-wrap:wrap;">
+                        <a class="btn btn-sm" asp-controller="Admin" asp-action="Index" asp-route-tab="products" style="font-size:12.5px;">+ Thêm sản phẩm</a>
+                        <a class="btn-ghost btn-sm" asp-controller="Admin" asp-action="Index" asp-route-tab="categories" style="font-size:12.5px; background:white;">+ Thêm ngành hàng</a>
+                        <a class="btn-ghost btn-sm" asp-controller="Admin" asp-action="Index" asp-route-tab="users" style="font-size:12.5px; background:white;">Tìm thành viên</a>
                     </div>
-                    <div class="row" style="gap:10px; align-items:center;">
-                        @if (user.IsLocked)
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- =========================================================================
+         TAB 1: REPORTS MODERATION
+         ========================================================================= -->
+    @if (currentTab == "reports")
+    {
+        <div class="row-between" style="margin-bottom:16px; flex-wrap:wrap; gap:12px; align-items:center;">
+            <div class="chips" style="margin:0;">
+                @foreach (var s in new[] { ("Pending", "Đang chờ xử lý"), ("Resolved", "Đã xử lý"), ("Dismissed", "Đã bỏ qua"), ("All", "Tất cả báo cáo") })
+                {
+                    <a class="chip @(Model.Status == s.Item1 ? "on" : "")"
+                       asp-controller="Admin" asp-action="Index" asp-route-tab="reports" asp-route-status="@s.Item1">
+                        @s.Item2
+                    </a>
+                }
+            </div>
+        </div>
+
+        @if (Model.Reports != null && Model.Reports.Items.Count > 0)
+        {
+            <div class="stack" style="gap:16px;">
+                @foreach (var report in Model.Reports.Items)
+                {
+                    <article class="card pad" style="background:var(--surface); border:1px solid var(--border);">
+                        <div class="row-between" style="align-items:center; margin-bottom:8px;">
+                            <strong style="font-size:16px; color:var(--ink);">
+                                @(report.ProductName ?? report.ReviewSnapshot ?? "Bài review đã bị gỡ")
+                            </strong>
+                            <span class="badge @(report.Status == "Pending" ? "badge-pending" : "badge-approved")">@report.Status</span>
+                        </div>
+
+                        <p class="muted text-xs" style="margin:0 0 10px 0;">
+                            Người báo cáo: <strong>@report.ReporterName</strong> (@report.ReporterEmail) · Thời gian: @report.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </p>
+
+                        <div style="background:#f8fafc; border:1px solid var(--border-light); padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:13.5px;">
+                            <strong style="color:var(--cons);">Lý do vi phạm:</strong> @report.Reason
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(report.Pros) || !string.IsNullOrEmpty(report.Cons))
                         {
-                            <span class="badge warn">Đang khóa</span>
-                            <form asp-controller="Admin" asp-action="SetLock" asp-route-id="@user.Id" method="post" style="display:inline;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="IsLocked" value="false" />
-                                <button class="btn-soft" type="submit">Mở khóa</button>
-                            </form>
+                            <div class="pros-cons-grid" style="margin-bottom:12px;">
+                                @if (!string.IsNullOrEmpty(report.Pros))
+                                {
+                                    <div class="pc-box pros" style="padding:10px 12px; font-size:13px;">
+                                        <div class="pc-header" style="font-size:11px;"><span>✔ Pros</span></div>
+                                        <p style="margin:0;">@report.Pros</p>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(report.Cons))
+                                {
+                                    <div class="pc-box cons" style="padding:10px 12px; font-size:13px;">
+                                        <div class="pc-header" style="font-size:11px;"><span>✖ Cons</span></div>
+                                        <p style="margin:0;">@report.Cons</p>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (report.EvidenceImageUrls != null && report.EvidenceImageUrls.Count > 0)
+                        {
+                            <div class="row" style="gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                                @foreach (var url in report.EvidenceImageUrls)
+                                {
+                                    <a href="@url" target="_blank" rel="noopener noreferrer">
+                                        <img src="@url" alt="Minh chứng" style="width:72px; height:72px; object-fit:cover; border-radius:6px; border:1px solid var(--border);" />
+                                    </a>
+                                }
+                            </div>
+                        }
+
+                        @if (report.Status == "Pending")
+                        {
+                            <div class="row" style="gap:8px; margin-top:12px; flex-wrap:wrap; border-top:1px solid var(--border-light); padding-top:12px;">
+                                <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="Action" value="Hide" />
+                                    <button class="btn-soft btn-sm" type="submit">👁 Ẩn bài review</button>
+                                </form>
+                                <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vĩnh viễn bài review này?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="Action" value="Delete" />
+                                    <button class="btn-danger btn-sm" type="submit">🗑 Xóa bài review</button>
+                                </form>
+                                <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;" onsubmit="return confirm('Hành động này sẽ ẩn bài và khóa tài khoản tác giả. Xác nhận?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="Action" value="Penalize" />
+                                    <button class="btn-danger btn-sm" type="submit">⚡ Phạt & Khóa tác giả</button>
+                                </form>
+                                <form asp-controller="Admin" asp-action="Moderate" asp-route-id="@report.Id" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="Action" value="Ignore" />
+                                    <button class="btn-ghost btn-sm" type="submit">Bỏ qua báo cáo</button>
+                                </form>
+                            </div>
                         }
                         else
                         {
-                            <span class="badge">Hoạt động</span>
-                            <form asp-controller="Admin" asp-action="SetLock" asp-route-id="@user.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn khóa tài khoản này?');">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="IsLocked" value="true" />
-                                <button class="btn-danger" type="submit">Khóa tài khoản</button>
-                            </form>
+                            <div class="muted text-xs" style="border-top:1px solid var(--border-light); padding-top:10px; margin-top:10px;">
+                                ✓ Đã xử lý bằng hành động: <strong>@report.Action</strong> · Lúc @(report.ResolvedAt?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")
+                            </div>
                         }
-                    </div>
-                </article>
-            }
-        </div>
-        <partial name="_Pager" model="(Model.Users.Page, Model.Users.TotalPages)" />
+                    </article>
+                }
+            </div>
+            <div style="margin-top:20px;">
+                <partial name="_Pager" model="(Model.Reports.Page, Model.Reports.TotalPages)" />
+            </div>
+        }
+        else
+        {
+            <div class="card pad text-center" style="padding:48px; background:var(--surface);">
+                <p class="muted" style="margin:0;">Không có báo cáo nào ở trạng thái "@Model.Status".</p>
+            </div>
+        }
     }
-    else
-    {
-        <div class="panel empty pad" style="text-align:center; padding:36px;">
-            Không tìm thấy người dùng phù hợp.
-        </div>
-    }
-}
 
-<!-- TAB 3: CATEGORIES -->
-@if (Model.Tab == "categories")
-{
-    <!-- Form Create Category -->
-    <div class="panel pad" style="margin-bottom:20px; background:var(--surface);">
-        <h3 style="margin:0 0 12px 0;">Thêm ngành hàng mới</h3>
-        <form class="form" asp-controller="Admin" asp-action="CreateCategory" method="post">
-            @Html.AntiForgeryToken()
-            <div class="row" style="gap:12px; align-items:flex-end; flex-wrap:wrap;">
-                <label class="field" style="flex:1; min-width:200px; margin:0;">
-                    <span>Tên ngành hàng</span>
-                    <input name="Name" required minlength="2" maxlength="120" placeholder="VD: Đồ gia dụng" />
-                </label>
-                <label class="field" style="flex:2; min-width:260px; margin:0;">
-                    <span>Mô tả ngắn gọn</span>
-                    <input name="Description" maxlength="500" placeholder="Mô tả ngành hàng..." />
-                </label>
-                <button class="btn" type="submit" style="margin-bottom:0;">Thêm ngành hàng</button>
+    <!-- =========================================================================
+         TAB 2: PRODUCTS MANAGEMENT
+         ========================================================================= -->
+    @if (currentTab == "products")
+    {
+        <!-- Form Add Product Drawer/Box -->
+        <div id="new-product-box" class="card pad" style="margin-bottom:24px; background:var(--surface); border:1px solid var(--border);">
+            <div class="row-between" style="margin-bottom:14px; align-items:center;">
+                <h3 style="margin:0; font-size:17px; color:var(--ink);">+ Thêm sản phẩm mới vào hệ thống</h3>
+                <span class="muted text-xs">Nhập đầy đủ thông tin để cộng đồng bắt đầu đánh giá</span>
+            </div>
+
+            <form asp-controller="Admin" asp-action="CreateProduct" method="post">
+                @Html.AntiForgeryToken()
+                <div class="form-grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+                    <div>
+                        <label class="spec-label" style="display:block; margin-bottom:4px;">Tên sản phẩm *</label>
+                        <input name="Name" required minlength="2" maxlength="200" placeholder="VD: iPhone 16 Pro Max 256GB" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:13.5px;" />
+                    </div>
+                    <div>
+                        <label class="spec-label" style="display:block; margin-bottom:4px;">Thương hiệu *</label>
+                        <input name="Brand" required minlength="1" maxlength="120" placeholder="VD: Apple" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:13.5px;" />
+                    </div>
+                </div>
+
+                <div class="form-grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+                    <div>
+                        <label class="spec-label" style="display:block; margin-bottom:4px;">Ngành hàng *</label>
+                        <select name="CategoryId" required style="width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:13.5px; background:white;">
+                            @if (Model.Categories != null)
+                            {
+                                foreach (var cat in Model.Categories)
+                                {
+                                    <option value="@cat.Id">@cat.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="spec-label" style="display:block; margin-bottom:4px;">Giá niêm yết (VNĐ)</label>
+                        <input name="Price" type="number" min="0" step="1000" placeholder="VD: 34990000" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:13.5px;" />
+                    </div>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label class="spec-label" style="display:block; margin-bottom:4px;">Link ảnh sản phẩm (URL)</label>
+                    <input name="ImageUrl" type="url" placeholder="https://example.com/image.jpg" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:13.5px;" />
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label class="spec-label" style="display:block; margin-bottom:4px;">Mô tả sản phẩm</label>
+                    <textarea name="Description" rows="3" placeholder="Mô tả thông số hoặc điểm nhấn sản phẩm..." style="width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:13.5px; resize:vertical; font-family:inherit;"></textarea>
+                </div>
+
+                <button class="btn" type="submit" style="padding:8px 24px;">Lưu & Tạo sản phẩm mới</button>
+            </form>
+        </div>
+
+        <!-- Filter & Search Products -->
+        <form class="filters" asp-controller="Admin" asp-action="Index" method="get" style="margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="hidden" name="tab" value="products" />
+            <input name="keyword" value="@Model.Keyword" placeholder="Tìm theo tên sản phẩm hoặc thương hiệu..." style="flex:1; min-width:220px; border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:13.5px;" />
+            <select name="categoryId" style="border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:13.5px; background:white;">
+                <option value="">Tất cả ngành hàng</option>
+                @if (Model.Categories != null)
+                {
+                    foreach (var cat in Model.Categories)
+                    {
+                        var isSel = Model.CategoryId == cat.Id;
+                        <option value="@cat.Id" selected="@isSel">@cat.Name</option>
+                    }
+                }
+            </select>
+            <button class="btn btn-sm" type="submit">Tìm kiếm</button>
+        </form>
+
+        <!-- Product Table / Items -->
+        @if (Model.Products != null && Model.Products.Items.Count > 0)
+        {
+            <div class="stack" style="gap:10px;">
+                @foreach (var p in Model.Products.Items)
+                {
+                    <article class="card pad" style="background:var(--surface); border:1px solid var(--border); padding:14px 18px;">
+                        <div class="row" style="gap:14px; align-items:center; flex-wrap:wrap;">
+                            <div style="width:64px; height:64px; border-radius:8px; overflow:hidden; background:#f1f5f9; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                @if (!string.IsNullOrEmpty(p.ImageUrl))
+                                {
+                                    <img src="@p.ImageUrl" alt="@p.Name" style="width:100%; height:100%; object-fit:contain;" />
+                                }
+                                else
+                                {
+                                    <span style="font-weight:700; color:#94a3b8; font-size:18px;">P</span>
+                                }
+                            </div>
+
+                            <div style="flex:1; min-width:200px;">
+                                <div class="row" style="gap:6px; align-items:center; margin-bottom:2px;">
+                                    <span class="badge" style="font-size:10px; padding:1px 6px;">@p.CategoryName</span>
+                                    <span class="muted text-xs">@p.Brand</span>
+                                </div>
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" style="font-weight:700; color:var(--ink); font-size:15px;">
+                                    @p.Name
+                                </a>
+                                <div class="row" style="gap:10px; margin-top:4px; font-size:12.5px; color:var(--muted);">
+                                    <span style="color:var(--primary); font-weight:700;">@p.Price.ToString("N0") đ</span>
+                                    <span>•</span>
+                                    <span style="color:#f59e0b; font-weight:600;">★ @p.AvgRating.ToString("0.0")</span>
+                                    <span>•</span>
+                                    <span>@p.TotalReviews bài đánh giá</span>
+                                    <span>•</span>
+                                    <span>Tạo ngày @p.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                </div>
+                            </div>
+
+                            <div class="row" style="gap:8px; margin-left:auto;">
+                                <a class="btn-ghost btn-sm" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" target="_blank">
+                                    Xem trang
+                                </a>
+                                <button type="button" class="btn-soft btn-sm" onclick="toggleEditProduct(@p.Id)">
+                                    Sửa
+                                </button>
+                                <form asp-controller="Admin" asp-action="DeleteProduct" asp-route-id="@p.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này? (Chỉ xóa được khi chưa có bài review)');" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn-danger btn-sm" type="submit">Xóa</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Collapsible Edit Product Drawer -->
+                        <div id="edit-product-@p.Id" style="display:none; margin-top:14px; padding-top:14px; border-top:1px dashed var(--border-light);">
+                            <form asp-controller="Admin" asp-action="UpdateProduct" asp-route-id="@p.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <div class="form-grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                                    <div>
+                                        <label class="spec-label" style="display:block; margin-bottom:2px;">Tên sản phẩm</label>
+                                        <input name="Name" value="@p.Name" required minlength="2" style="width:100%; border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px;" />
+                                    </div>
+                                    <div>
+                                        <label class="spec-label" style="display:block; margin-bottom:2px;">Thương hiệu</label>
+                                        <input name="Brand" value="@p.Brand" required minlength="1" style="width:100%; border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px;" />
+                                    </div>
+                                </div>
+                                <div class="form-grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                                    <div>
+                                        <label class="spec-label" style="display:block; margin-bottom:2px;">Ngành hàng</label>
+                                        <select name="CategoryId" required style="width:100%; border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px; background:white;">
+                                            @if (Model.Categories != null)
+                                            {
+                                                foreach (var cat in Model.Categories)
+                                                {
+                                                    var isSel = p.CategoryId == cat.Id;
+                                                    <option value="@cat.Id" selected="@isSel">@cat.Name</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="spec-label" style="display:block; margin-bottom:2px;">Giá niêm yết (VNĐ)</label>
+                                        <input name="Price" type="number" value="@((long)p.Price)" style="width:100%; border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px;" />
+                                    </div>
+                                </div>
+                                <div style="margin-bottom:12px;">
+                                    <label class="spec-label" style="display:block; margin-bottom:2px;">Link ảnh sản phẩm</label>
+                                    <input name="ImageUrl" type="url" value="@p.ImageUrl" style="width:100%; border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px;" />
+                                </div>
+                                <div class="row" style="gap:8px;">
+                                    <button class="btn btn-sm" type="submit">Cập nhật sản phẩm</button>
+                                    <button class="btn-ghost btn-sm" type="button" onclick="toggleEditProduct(@p.Id)">Hủy</button>
+                                </div>
+                            </form>
+                        </div>
+                    </article>
+                }
+            </div>
+            <div style="margin-top:20px;">
+                <partial name="_Pager" model="(Model.Products.Page, Model.Products.TotalPages)" />
+            </div>
+        }
+        else
+        {
+            <div class="card pad text-center" style="padding:48px; background:var(--surface);">
+                <p class="muted" style="margin:0;">Không tìm thấy sản phẩm nào.</p>
+            </div>
+        }
+    }
+
+    <!-- =========================================================================
+         TAB 3: REVIEWS MODERATION
+         ========================================================================= -->
+    @if (currentTab == "reviews")
+    {
+        <!-- Filter Reviews -->
+        <form class="filters" asp-controller="Admin" asp-action="Index" method="get" style="margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="hidden" name="tab" value="reviews" />
+            <input name="keyword" value="@Model.Keyword" placeholder="Tìm theo tên sản phẩm, tác giả hoặc nội dung review..." style="flex:1; min-width:220px; border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:13.5px;" />
+            <select name="status" style="border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:13.5px; background:white;">
+                <option value="All">Tất cả trạng thái</option>
+                <option value="Visible" selected="@(Model.Status == "Visible")">Đang hiển thị</option>
+                <option value="Hidden" selected="@(Model.Status == "Hidden")">Đã bị ẩn</option>
+            </select>
+            <button class="btn btn-sm" type="submit">Lọc</button>
+        </form>
+
+        @if (Model.Reviews != null && Model.Reviews.Items.Count > 0)
+        {
+            <div class="stack" style="gap:14px;">
+                @foreach (var r in Model.Reviews.Items)
+                {
+                    <article class="card pad" style="background:var(--surface); border:1px solid var(--border); padding:18px;">
+                        <div class="row-between" style="align-items:center; margin-bottom:8px;">
+                            <div>
+                                <span class="muted text-xs">Sản phẩm:</span>
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@r.ProductId" style="font-weight:700; color:var(--ink); font-size:15px; margin-left:4px;">
+                                    @r.ProductName
+                                </a>
+                            </div>
+                            <div class="row" style="gap:6px; align-items:center;">
+                                <span style="color:#f59e0b; font-weight:800;">★ @r.Rating</span>
+                                @if (r.IsHidden)
+                                {
+                                    <span class="badge" style="background:#fee2e2; color:#b91c1c;">Đã bị ẩn</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-approved">Đang hiển thị</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="muted text-xs" style="margin-bottom:10px;">
+                            Bởi: <strong>@r.AuthorName</strong> @(r.IsAnonymous ? "(Ẩn danh)" : "") · Đăng lúc: @r.CreatedAt.ToString("dd/MM/yyyy HH:mm") · @r.UpvoteCount thích · @r.CommentCount bình luận
+                        </div>
+
+                        <div class="pros-cons-grid" style="margin-bottom:12px;">
+                            <div class="pc-box pros" style="padding:10px 12px; font-size:13px;">
+                                <div class="pc-header" style="font-size:11px;"><span>✔ Pros</span></div>
+                                <p style="margin:0;">@r.Pros</p>
+                            </div>
+                            <div class="pc-box cons" style="padding:10px 12px; font-size:13px;">
+                                <div class="pc-header" style="font-size:11px;"><span>✖ Cons</span></div>
+                                <p style="margin:0;">@r.Cons</p>
+                            </div>
+                        </div>
+
+                        <div class="row" style="gap:8px; border-top:1px solid var(--border-light); padding-top:10px;">
+                            <form asp-controller="Admin" asp-action="ToggleHideReview" asp-route-id="@r.Id" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="returnTab" value="reviews" />
+                                <button class="btn-soft btn-sm" type="submit">
+                                    @(r.IsHidden ? "👁 Hiển thị lại review" : "👁‍🗨 Ẩn bài review này")
+                                </button>
+                            </form>
+                            <form asp-controller="Admin" asp-action="DeleteReview" asp-route-id="@r.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vĩnh viễn bài review này?');" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="returnTab" value="reviews" />
+                                <button class="btn-danger btn-sm" type="submit">🗑 Xóa bài review</button>
+                            </form>
+                            <a class="btn-ghost btn-sm" asp-controller="Products" asp-action="Details" asp-route-id="@r.ProductId" target="_blank" style="margin-left:auto;">
+                                Xem trên trang sản phẩm ↗
+                            </a>
+                        </div>
+                    </article>
+                }
+            </div>
+            <div style="margin-top:20px;">
+                <partial name="_Pager" model="(Model.Reviews.Page, Model.Reviews.TotalPages)" />
+            </div>
+        }
+        else
+        {
+            <div class="card pad text-center" style="padding:48px; background:var(--surface);">
+                <p class="muted" style="margin:0;">Không tìm thấy bài đánh giá nào phù hợp.</p>
+            </div>
+        }
+    }
+
+    <!-- =========================================================================
+         TAB 4: USERS MANAGEMENT
+         ========================================================================= -->
+    @if (currentTab == "users")
+    {
+        <form class="filters" asp-controller="Admin" asp-action="Index" method="get" style="margin-bottom:16px;">
+            <input type="hidden" name="tab" value="users" />
+            <div class="row" style="gap:10px;">
+                <input name="keyword" value="@Model.Keyword" placeholder="Nhập họ tên hoặc email người dùng..." style="flex:1; border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:13.5px;" />
+                <button class="btn btn-sm" type="submit">Tìm kiếm</button>
             </div>
         </form>
-    </div>
 
-    @if (Model.Categories != null && Model.Categories.Count > 0)
-    {
-        <div class="stack" style="gap:10px;">
-            @foreach (var cat in Model.Categories)
-            {
-                <article class="card pad row" style="justify-content:space-between; align-items:center;">
-                    <div>
-                        <strong style="font-size:16px;">@cat.Name</strong>
-                        <div class="muted" style="font-size:13px;">@(cat.Description ?? "Không có mô tả") · <strong>@cat.ProductCount</strong> sản phẩm</div>
-                    </div>
-                    @if (cat.ProductCount == 0)
-                    {
-                        <form asp-controller="Admin" asp-action="DeleteCategory" asp-route-id="@cat.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ngành hàng này?');">
-                            @Html.AntiForgeryToken()
-                            <button class="btn-danger" type="submit">Xóa</button>
-                        </form>
-                    }
-                    else
-                    {
-                        <span class="muted" style="font-size:12px;" title="Chỉ được xóa khi số sản phẩm bằng 0">Đang có sản phẩm</span>
-                    }
-                </article>
-            }
-        </div>
+        @if (Model.Users != null && Model.Users.Items.Count > 0)
+        {
+            <div class="stack" style="gap:10px;">
+                @foreach (var user in Model.Users.Items)
+                {
+                    var initial = !string.IsNullOrEmpty(user.FullName) ? user.FullName.Substring(0, 1).ToUpper() : "U";
+                    <article class="card pad" style="background:var(--surface); border:1px solid var(--border); padding:14px 18px;">
+                        <div class="row" style="justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                            <div class="row" style="gap:12px; align-items:center;">
+                                <span class="rc-avatar" style="width:36px; height:36px; font-size:13px; background:#e0e7ff; color:#4338ca;">
+                                    @initial
+                                </span>
+                                <div>
+                                    <div class="row" style="gap:8px; align-items:center;">
+                                        <strong style="font-size:15px; color:var(--ink);">@user.FullName</strong>
+                                        <span class="badge" style="font-size:10.5px; padding:1px 6px;">@user.Role</span>
+                                        @if (user.IsLocked)
+                                        {
+                                            <span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:10.5px;">Đang khóa</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-approved" style="font-size:10.5px;">Hoạt động</span>
+                                        }
+                                    </div>
+                                    <div class="muted text-xs" style="margin-top:2px;">
+                                        @user.Email · Tham gia: @user.CreatedAt.ToString("dd/MM/yyyy")
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row" style="gap:8px; align-items:center;">
+                                @if (user.IsLocked)
+                                {
+                                    <form asp-controller="Admin" asp-action="SetLock" asp-route-id="@user.Id" method="post" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="IsLocked" value="false" />
+                                        <button class="btn-soft btn-sm" type="submit">Mở khóa tài khoản</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-controller="Admin" asp-action="SetLock" asp-route-id="@user.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn khóa tài khoản này? Người dùng sẽ không thể đăng nhập.');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="IsLocked" value="true" />
+                                        <button class="btn-danger btn-sm" type="submit">Khóa tài khoản</button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+            <div style="margin-top:20px;">
+                <partial name="_Pager" model="(Model.Users.Page, Model.Users.TotalPages)" />
+            </div>
+        }
+        else
+        {
+            <div class="card pad text-center" style="padding:48px; background:var(--surface);">
+                <p class="muted" style="margin:0;">Không tìm thấy người dùng phù hợp.</p>
+            </div>
+        }
     }
+
+    <!-- =========================================================================
+         TAB 5: CATEGORIES MANAGEMENT
+         ========================================================================= -->
+    @if (currentTab == "categories")
+    {
+        <!-- Form Add Category -->
+        <div class="card pad" style="margin-bottom:24px; background:var(--surface); border:1px solid var(--border);">
+            <h3 style="margin:0 0 12px 0; font-size:16px; color:var(--ink);">+ Thêm ngành hàng mới</h3>
+            <form asp-controller="Admin" asp-action="CreateCategory" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row" style="gap:12px; align-items:flex-end; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:200px;">
+                        <label class="spec-label" style="display:block; margin-bottom:4px;">Tên ngành hàng *</label>
+                        <input name="Name" required minlength="2" maxlength="120" placeholder="VD: Thiết bị thể thao" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:13.5px;" />
+                    </div>
+                    <div style="flex:2; min-width:260px;">
+                        <label class="spec-label" style="display:block; margin-bottom:4px;">Mô tả ngắn gọn</label>
+                        <input name="Description" maxlength="500" placeholder="Mô tả tóm tắt ngành hàng..." style="width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:13.5px;" />
+                    </div>
+                    <button class="btn btn-sm" type="submit" style="padding:8px 20px;">Thêm ngành hàng</button>
+                </div>
+            </form>
+        </div>
+
+        @if (Model.Categories != null && Model.Categories.Count > 0)
+        {
+            <div class="stack" style="gap:10px;">
+                @foreach (var cat in Model.Categories)
+                {
+                    <article class="card pad" style="background:var(--surface); border:1px solid var(--border); padding:14px 18px;">
+                        <div class="row-between" style="align-items:center; flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <strong style="font-size:15px; color:var(--ink);">@cat.Name</strong>
+                                <div class="muted text-xs" style="margin-top:2px;">
+                                    @(cat.Description ?? "Chưa có mô tả") · <strong style="color:var(--primary);">@cat.ProductCount</strong> sản phẩm
+                                </div>
+                            </div>
+                            <div class="row" style="gap:8px;">
+                                <button type="button" class="btn-ghost btn-sm" onclick="toggleEditCategory(@cat.Id)">
+                                    Sửa
+                                </button>
+                                @if (cat.ProductCount == 0)
+                                {
+                                    <form asp-controller="Admin" asp-action="DeleteCategory" asp-route-id="@cat.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ngành hàng này?');">
+                                        @Html.AntiForgeryToken()
+                                        <button class="btn-danger btn-sm" type="submit">Xóa</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="muted text-xs" title="Chỉ được xóa khi ngành hàng có 0 sản phẩm">Đang chứa @cat.ProductCount sản phẩm</span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Collapsible Edit Category Drawer -->
+                        <div id="edit-cat-@cat.Id" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border-light);">
+                            <form asp-controller="Admin" asp-action="UpdateCategory" asp-route-id="@cat.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <div class="row" style="gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                                    <div style="flex:1; min-width:180px;">
+                                        <label class="spec-label" style="display:block; margin-bottom:2px;">Tên ngành hàng</label>
+                                        <input name="Name" value="@cat.Name" required minlength="2" style="width:100%; border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:13px;" />
+                                    </div>
+                                    <div style="flex:2; min-width:220px;">
+                                        <label class="spec-label" style="display:block; margin-bottom:2px;">Mô tả</label>
+                                        <input name="Description" value="@cat.Description" style="width:100%; border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:13px;" />
+                                    </div>
+                                    <button class="btn btn-sm" type="submit">Lưu</button>
+                                    <button class="btn-ghost btn-sm" type="button" onclick="toggleEditCategory(@cat.Id)">Hủy</button>
+                                </div>
+                            </form>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function switchToTab(tabName, scroll) {
+            window.location.href = `/Admin?tab=${tabName}${scroll ? '#new-product-box' : ''}`;
+        }
+
+        function toggleEditProduct(id) {
+            const el = document.getElementById(`edit-product-${id}`);
+            if (el) {
+                el.style.display = (el.style.display === "none" || !el.style.display) ? "block" : "none";
+            }
+        }
+
+        function toggleEditCategory(id) {
+            const el = document.getElementById(`edit-cat-${id}`);
+            if (el) {
+                el.style.display = (el.style.display === "none" || !el.style.display) ? "block" : "none";
+            }
+        }
+    </script>
 }

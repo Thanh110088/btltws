@@ -18,6 +18,10 @@ public interface IAdminService
     Task<ModerateResultDto> ModerateAsync(int reportId, int adminId, string action, CancellationToken cancellationToken);
     Task<PagedResult<UserProfileDto>> GetUsersAsync(UserListQuery query, CancellationToken cancellationToken);
     Task<UserProfileDto> SetLockAsync(int userId, int adminId, bool isLocked, CancellationToken cancellationToken);
+    Task<AdminStatsDto> GetStatsAsync(CancellationToken cancellationToken);
+    Task<PagedResult<ReviewDto>> GetReviewsAsync(string? keyword, string? status, int page, int pageSize, CancellationToken cancellationToken);
+    Task ToggleHideReviewAsync(int reviewId, CancellationToken cancellationToken);
+    Task DeleteReviewAsync(int reviewId, CancellationToken cancellationToken);
 }
 
 public class AdminService : IAdminService
@@ -284,6 +288,87 @@ public class AdminService : IAdminService
             IsLocked = user.IsLocked,
             CreatedAt = user.CreatedAt
         };
+    }
+
+    public async Task<AdminStatsDto> GetStatsAsync(CancellationToken cancellationToken)
+    {
+        return new AdminStatsDto
+        {
+            TotalUsers = await _db.Users.CountAsync(cancellationToken),
+            TotalProducts = await _db.Products.CountAsync(cancellationToken),
+            TotalReviews = await _db.Reviews.CountAsync(cancellationToken),
+            TotalCategories = await _db.Categories.CountAsync(cancellationToken),
+            PendingReports = await _db.ReviewReports.CountAsync(r => r.Status == ReportStatuses.Pending, cancellationToken),
+            TotalComments = await _db.Comments.CountAsync(cancellationToken)
+        };
+    }
+
+    public async Task<PagedResult<ReviewDto>> GetReviewsAsync(string? keyword, string? status, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var (normPage, normSize) = Paging.Normalize(page, pageSize, 20);
+        IQueryable<Review> query = _db.Reviews.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var kw = keyword.Trim();
+            query = query.Where(r => r.Product.Name.Contains(kw) || r.User.FullName.Contains(kw) || r.Pros.Contains(kw) || r.Cons.Contains(kw));
+        }
+
+        if (string.Equals(status, "Hidden", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(r => r.IsHidden);
+        }
+        else if (string.Equals(status, "Visible", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(r => !r.IsHidden);
+        }
+
+        var total = await query.CountAsync(cancellationToken);
+        var rows = await ReviewQueries.MapAsync(
+            query.OrderByDescending(r => r.CreatedAt)
+                 .Skip((normPage - 1) * normSize)
+                 .Take(normSize),
+            cancellationToken);
+
+        return new PagedResult<ReviewDto>
+        {
+            Page = normPage,
+            PageSize = normSize,
+            TotalItems = total,
+            Items = rows
+        };
+    }
+
+    public async Task ToggleHideReviewAsync(int reviewId, CancellationToken cancellationToken)
+    {
+        var review = await _db.Reviews.FirstOrDefaultAsync(r => r.Id == reviewId, cancellationToken)
+            ?? throw new AppException(StatusCodes.Status404NotFound, "Không tìm thấy bài review.");
+
+        review.IsHidden = !review.IsHidden;
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteReviewAsync(int reviewId, CancellationToken cancellationToken)
+    {
+        var review = await _db.Reviews.FirstOrDefaultAsync(r => r.Id == reviewId, cancellationToken)
+            ?? throw new AppException(StatusCodes.Status404NotFound, "Không tìm thấy bài review.");
+
+        var reports = await _db.ReviewReports.Where(report => report.ReviewId == review.Id).ToListAsync(cancellationToken);
+        var snapshot = ReportSnapshots.Build(review);
+        var now = DateTime.UtcNow;
+        foreach (var report in reports)
+        {
+            report.ReviewSnapshot = snapshot;
+            if (report.Status == ReportStatuses.Pending)
+            {
+                report.Status = ReportStatuses.Resolved;
+                report.Action = ModerationActions.Delete;
+                report.ResolvedAt = now;
+            }
+        }
+
+        _db.Reviews.Remove(review);
+        await _db.SaveChangesAsync(cancellationToken);
     }
 
     private async Task ResolvePendingFamilyAsync(int reviewId, string action, int adminId, DateTime now, CancellationToken cancellationToken)

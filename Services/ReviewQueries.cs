@@ -9,6 +9,9 @@ internal sealed class ReviewProjection
     public int Id { get; set; }
     public int ProductId { get; set; }
     public string? ProductName { get; set; }
+    public decimal? ProductPrice { get; set; }
+    public string? CategoryName { get; set; }
+    public string? ProductImageUrl { get; set; }
     public int Rating { get; set; }
     public string Pros { get; set; } = string.Empty;
     public string Cons { get; set; } = string.Empty;
@@ -34,6 +37,9 @@ public static class ReviewQueries
                 Id = review.Id,
                 ProductId = review.ProductId,
                 ProductName = review.Product.Name,
+                ProductPrice = review.Product.Price,
+                CategoryName = review.Product.Category.Name,
+                ProductImageUrl = review.Product.ImageUrl,
                 Rating = review.Rating,
                 Pros = review.Pros,
                 Cons = review.Cons,
@@ -58,6 +64,9 @@ public static class ReviewQueries
             Id = row.Id,
             ProductId = row.ProductId,
             ProductName = row.ProductName,
+            ProductPrice = row.ProductPrice,
+            CategoryName = row.CategoryName,
+            ProductImageUrl = row.ProductImageUrl,
             Rating = row.Rating,
             Pros = row.Pros,
             Cons = row.Cons,
