@@ -1,4 +1,4 @@
-﻿@inject FlawFirst.Api.Services.IProductCatalogService Catalog
+@inject FlawFirst.Api.Services.IProductCatalogService Catalog
 @{
     var layoutStats = await Catalog.GetPlatformStatsAsync(Context.RequestAborted);
     var layoutCategories = await Catalog.GetCategoriesAsync(Context.RequestAborted);
@@ -65,6 +65,7 @@
                     </a>
 
                     <form class="top-search" asp-controller="Products" asp-action="Index" method="get">
+                        <input type="hidden" name="view" value="filter" />
                         <input name="keyword" type="search" placeholder="Tìm kiếm sản phẩm..." value="@(Context.Request.Query["keyword"])" aria-label="Tìm kiếm sản phẩm" />
                         <button type="submit" aria-label="Tìm kiếm">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>

@@ -29,7 +29,9 @@ public class ProductCatalogService : IProductCatalogService
     public async Task<PagedResult<ProductListItemDto>> SearchAsync(ProductQuery query, CancellationToken cancellationToken)
     {
         if (query.MinPrice.HasValue && query.MaxPrice.HasValue && query.MinPrice > query.MaxPrice)
-            throw new AppException(StatusCodes.Status400BadRequest, "Khoảng giá không hợp lệ.");
+        {
+            (query.MinPrice, query.MaxPrice) = (query.MaxPrice, query.MinPrice);
+        }
 
         var (page, pageSize) = Paging.Normalize(query.Page, query.PageSize, 12);
         IQueryable<Product> products = _db.Products.AsNoTracking();
@@ -40,17 +42,48 @@ public class ProductCatalogService : IProductCatalogService
             products = products.Where(product =>
                 product.Name.Contains(keyword) ||
                 product.Brand.Contains(keyword) ||
-                product.Category.Name.Contains(keyword));
+                product.Category.Name.Contains(keyword) ||
+                (product.Description != null && product.Description.Contains(keyword)) ||
+                product.Reviews.Any(review => !review.IsHidden && (
+                    review.Pros.Contains(keyword) ||
+                    review.Cons.Contains(keyword) ||
+                    review.User.FullName.Contains(keyword)
+                )));
         }
 
-        if (query.CategoryId.HasValue)
+        if (query.CategoryId.HasValue && query.CategoryId.Value > 0)
             products = products.Where(product => product.CategoryId == query.CategoryId.Value);
 
-        if (query.MinPrice.HasValue)
+        if (query.MinPrice.HasValue && query.MinPrice.Value >= 0)
             products = products.Where(product => product.Price >= query.MinPrice.Value);
 
-        if (query.MaxPrice.HasValue)
+        if (query.MaxPrice.HasValue && query.MaxPrice.Value > 0)
             products = products.Where(product => product.Price <= query.MaxPrice.Value);
+
+        if (query.MinRating.HasValue && query.MinRating.Value > 0)
+        {
+            var minRating = query.MinRating.Value;
+            products = products.Where(product =>
+                (product.Reviews.Where(review => !review.IsHidden).Average(review => (double?)review.Rating) ?? 0) >= minRating);
+        }
+
+        if (query.HasImages == true)
+        {
+            products = products.Where(product =>
+                product.Reviews.Any(review => !review.IsHidden && review.Images.Any()));
+        }
+
+        if (query.ExpertReviewer == true)
+        {
+            products = products.Where(product =>
+                product.Reviews.Any(review => !review.IsHidden && review.User.Reviews.Count >= 2));
+        }
+
+        if (query.VerifiedBuyer == true)
+        {
+            products = products.Where(product =>
+                product.Reviews.Any(review => !review.IsHidden && (review.Images.Any() || review.UpvoteCount > 0)));
+        }
 
         products = (query.Sort ?? "newest").Trim().ToLowerInvariant() switch
         {

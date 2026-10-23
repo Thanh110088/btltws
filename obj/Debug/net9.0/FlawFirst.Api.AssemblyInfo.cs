@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FlawFirst.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+acef5b6a85601aea2eb026535247af1249ff9286")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+42ca486b5dfc4f1732f6defb1ec2a52b2b3d3f81")]
 [assembly: System.Reflection.AssemblyProductAttribute("FlawFirst.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FlawFirst.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

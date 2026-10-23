@@ -6,6 +6,10 @@ public class ProductQuery
     public int? CategoryId { get; set; }
     public decimal? MinPrice { get; set; }
     public decimal? MaxPrice { get; set; }
+    public double? MinRating { get; set; }
+    public bool? HasImages { get; set; }
+    public bool? VerifiedBuyer { get; set; }
+    public bool? ExpertReviewer { get; set; }
 
     /// <summary>newest | rating | mostReviewed</summary>
     public string Sort { get; set; } = "newest";
