@@ -58,7 +58,7 @@
         <div class="grid-4">
             @if (Model.Products.Items.Count > 0)
             {
-                @foreach (var product in Model.Products.Items.Take(4))
+                @foreach (ProductListItemDto product in Model.Products.Items.Take(4))
                 {
                     <partial name="_ProductCard" model="product" />
                 }
@@ -87,7 +87,7 @@
                 <div class="stack" style="gap: 16px;">
                     @if (Model.LatestReviews.Count > 0)
                     {
-                        foreach (var item in Model.LatestReviews)
+                        foreach (ReviewDto item in Model.LatestReviews)
                         {
                             var authorInitial = !string.IsNullOrWhiteSpace(item.AuthorName) ? item.AuthorName.Trim().Substring(0, 1).ToUpper() : "U";
                             var ratingStr = item.Rating.ToString("0.0");
@@ -259,14 +259,7 @@ else
                     <span class="filter-tag">
                         <span>Từ khóa: <strong>@Model.Query.Keyword</strong></span>
                         <a asp-controller="Products" asp-action="Index" asp-route-view="filter"
-                           asp-route-sort="@Model.Query.Sort"
-                           asp-route-categoryId="@Model.Query.CategoryId"
-                           asp-route-minPrice="@Model.Query.MinPrice"
-                           asp-route-maxPrice="@Model.Query.MaxPrice"
-                           asp-route-minRating="@Model.Query.MinRating"
-                           asp-route-hasImages="@Model.Query.HasImages"
-                           asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                           asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer"
+                           asp-all-route-data='@Model.Query.ToRouteValues("keyword")'
                            class="tag-remove" title="Xóa từ khóa">✕</a>
                     </span>
                 }
@@ -276,14 +269,7 @@ else
                     <span class="filter-tag">
                         <span>Ngành: <strong>@catName</strong></span>
                         <a asp-controller="Products" asp-action="Index" asp-route-view="filter"
-                           asp-route-sort="@Model.Query.Sort"
-                           asp-route-keyword="@Model.Query.Keyword"
-                           asp-route-minPrice="@Model.Query.MinPrice"
-                           asp-route-maxPrice="@Model.Query.MaxPrice"
-                           asp-route-minRating="@Model.Query.MinRating"
-                           asp-route-hasImages="@Model.Query.HasImages"
-                           asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                           asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer"
+                           asp-all-route-data='@Model.Query.ToRouteValues("categoryId")'
                            class="tag-remove" title="Xóa ngành hàng">✕</a>
                     </span>
                 }
@@ -292,13 +278,7 @@ else
                     <span class="filter-tag">
                         <span>Giá: <strong>@(Model.Query.MinPrice?.ToString("N0") ?? "0") đ - @(Model.Query.MaxPrice?.ToString("N0") ?? "...") đ</strong></span>
                         <a asp-controller="Products" asp-action="Index" asp-route-view="filter"
-                           asp-route-sort="@Model.Query.Sort"
-                           asp-route-keyword="@Model.Query.Keyword"
-                           asp-route-categoryId="@Model.Query.CategoryId"
-                           asp-route-minRating="@Model.Query.MinRating"
-                           asp-route-hasImages="@Model.Query.HasImages"
-                           asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                           asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer"
+                           asp-all-route-data='@Model.Query.ToRouteValues("price")'
                            class="tag-remove" title="Xóa khoảng giá">✕</a>
                     </span>
                 }
@@ -307,14 +287,7 @@ else
                     <span class="filter-tag">
                         <span>⭐ Từ <strong>@Model.Query.MinRating.Value.ToString("0.0")</strong> sao</span>
                         <a asp-controller="Products" asp-action="Index" asp-route-view="filter"
-                           asp-route-sort="@Model.Query.Sort"
-                           asp-route-keyword="@Model.Query.Keyword"
-                           asp-route-categoryId="@Model.Query.CategoryId"
-                           asp-route-minPrice="@Model.Query.MinPrice"
-                           asp-route-maxPrice="@Model.Query.MaxPrice"
-                           asp-route-hasImages="@Model.Query.HasImages"
-                           asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                           asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer"
+                           asp-all-route-data='@Model.Query.ToRouteValues("minRating")'
                            class="tag-remove" title="Xóa lọc sao">✕</a>
                     </span>
                 }
@@ -323,14 +296,7 @@ else
                     <span class="filter-tag">
                         <span>📷 Có ảnh chụp</span>
                         <a asp-controller="Products" asp-action="Index" asp-route-view="filter"
-                           asp-route-sort="@Model.Query.Sort"
-                           asp-route-keyword="@Model.Query.Keyword"
-                           asp-route-categoryId="@Model.Query.CategoryId"
-                           asp-route-minPrice="@Model.Query.MinPrice"
-                           asp-route-maxPrice="@Model.Query.MaxPrice"
-                           asp-route-minRating="@Model.Query.MinRating"
-                           asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                           asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer"
+                           asp-all-route-data='@Model.Query.ToRouteValues("hasImages")'
                            class="tag-remove" title="Xóa lọc ảnh">✕</a>
                     </span>
                 }
@@ -339,14 +305,7 @@ else
                     <span class="filter-tag">
                         <span>🧾 Đã xác thực hóa đơn</span>
                         <a asp-controller="Products" asp-action="Index" asp-route-view="filter"
-                           asp-route-sort="@Model.Query.Sort"
-                           asp-route-keyword="@Model.Query.Keyword"
-                           asp-route-categoryId="@Model.Query.CategoryId"
-                           asp-route-minPrice="@Model.Query.MinPrice"
-                           asp-route-maxPrice="@Model.Query.MaxPrice"
-                           asp-route-minRating="@Model.Query.MinRating"
-                           asp-route-hasImages="@Model.Query.HasImages"
-                           asp-route-expertReviewer="@Model.Query.ExpertReviewer"
+                           asp-all-route-data='@Model.Query.ToRouteValues("verifiedBuyer")'
                            class="tag-remove" title="Xóa lọc hóa đơn">✕</a>
                     </span>
                 }
@@ -355,14 +314,7 @@ else
                     <span class="filter-tag">
                         <span>🎖️ Reviewer Cấp 2+</span>
                         <a asp-controller="Products" asp-action="Index" asp-route-view="filter"
-                           asp-route-sort="@Model.Query.Sort"
-                           asp-route-keyword="@Model.Query.Keyword"
-                           asp-route-categoryId="@Model.Query.CategoryId"
-                           asp-route-minPrice="@Model.Query.MinPrice"
-                           asp-route-maxPrice="@Model.Query.MaxPrice"
-                           asp-route-minRating="@Model.Query.MinRating"
-                           asp-route-hasImages="@Model.Query.HasImages"
-                           asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer"
+                           asp-all-route-data='@Model.Query.ToRouteValues("expertReviewer")'
                            class="tag-remove" title="Xóa lọc reviewer cấp 2+">✕</a>
                     </span>
                 }
@@ -522,43 +474,22 @@ else
                     <a class="sort-btn @(Model.Query.Sort == "newest" || string.IsNullOrEmpty(Model.Query.Sort) ? "active" : "")"
                        asp-controller="Products" asp-action="Index"
                        asp-route-view="filter"
-                       asp-route-sort="newest"
-                       asp-route-categoryId="@Model.Query.CategoryId"
-                       asp-route-keyword="@Model.Query.Keyword"
-                       asp-route-minPrice="@Model.Query.MinPrice"
-                       asp-route-maxPrice="@Model.Query.MaxPrice"
-                       asp-route-minRating="@Model.Query.MinRating"
-                       asp-route-hasImages="@Model.Query.HasImages"
-                       asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                       asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer">
+                       asp-all-route-data="@Model.Query.ToRouteValues()"
+                       asp-route-sort="newest">
                         Mới nhất
                     </a>
                     <a class="sort-btn @(Model.Query.Sort == "rating" ? "active" : "")"
                        asp-controller="Products" asp-action="Index"
                        asp-route-view="filter"
-                       asp-route-sort="rating"
-                       asp-route-categoryId="@Model.Query.CategoryId"
-                       asp-route-keyword="@Model.Query.Keyword"
-                       asp-route-minPrice="@Model.Query.MinPrice"
-                       asp-route-maxPrice="@Model.Query.MaxPrice"
-                       asp-route-minRating="@Model.Query.MinRating"
-                       asp-route-hasImages="@Model.Query.HasImages"
-                       asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                       asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer">
+                       asp-all-route-data="@Model.Query.ToRouteValues()"
+                       asp-route-sort="rating">
                         Đánh giá cao nhất
                     </a>
                     <a class="sort-btn @(Model.Query.Sort == "mostReviewed" ? "active" : "")"
                        asp-controller="Products" asp-action="Index"
                        asp-route-view="filter"
-                       asp-route-sort="mostReviewed"
-                       asp-route-categoryId="@Model.Query.CategoryId"
-                       asp-route-keyword="@Model.Query.Keyword"
-                       asp-route-minPrice="@Model.Query.MinPrice"
-                       asp-route-maxPrice="@Model.Query.MaxPrice"
-                       asp-route-minRating="@Model.Query.MinRating"
-                       asp-route-hasImages="@Model.Query.HasImages"
-                       asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                       asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer">
+                       asp-all-route-data="@Model.Query.ToRouteValues()"
+                       asp-route-sort="mostReviewed">
                         Nhiều tim thích nhất
                     </a>
                 </div>
@@ -583,16 +514,8 @@ else
                         {
                             <a class="page-num" asp-controller="Products" asp-action="Index"
                                asp-route-view="filter"
-                               asp-route-page="@(curPage - 1)"
-                               asp-route-sort="@Model.Query.Sort"
-                               asp-route-categoryId="@Model.Query.CategoryId"
-                               asp-route-keyword="@Model.Query.Keyword"
-                               asp-route-minPrice="@Model.Query.MinPrice"
-                               asp-route-maxPrice="@Model.Query.MaxPrice"
-                               asp-route-minRating="@Model.Query.MinRating"
-                               asp-route-hasImages="@Model.Query.HasImages"
-                               asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                               asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer" title="Trang trước">‹</a>
+                               asp-all-route-data="@Model.Query.ToRouteValues()"
+                               asp-route-page="@(curPage - 1)" title="Trang trước">‹</a>
                         }
 
                         @for (int p = Math.Max(1, curPage - 2); p <= Math.Min(totalPages, curPage + 2); p++)
@@ -605,16 +528,8 @@ else
                             {
                                 <a class="page-num" asp-controller="Products" asp-action="Index"
                                    asp-route-view="filter"
-                                   asp-route-page="@p"
-                                   asp-route-sort="@Model.Query.Sort"
-                                   asp-route-categoryId="@Model.Query.CategoryId"
-                                   asp-route-keyword="@Model.Query.Keyword"
-                                   asp-route-minPrice="@Model.Query.MinPrice"
-                                   asp-route-maxPrice="@Model.Query.MaxPrice"
-                                   asp-route-minRating="@Model.Query.MinRating"
-                                   asp-route-hasImages="@Model.Query.HasImages"
-                                   asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                                   asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer">@p</a>
+                                   asp-all-route-data="@Model.Query.ToRouteValues()"
+                                   asp-route-page="@p">@p</a>
                             }
                         }
 
@@ -622,16 +537,8 @@ else
                         {
                             <a class="page-num" asp-controller="Products" asp-action="Index"
                                asp-route-view="filter"
-                               asp-route-page="@(curPage + 1)"
-                               asp-route-sort="@Model.Query.Sort"
-                               asp-route-categoryId="@Model.Query.CategoryId"
-                               asp-route-keyword="@Model.Query.Keyword"
-                               asp-route-minPrice="@Model.Query.MinPrice"
-                               asp-route-maxPrice="@Model.Query.MaxPrice"
-                               asp-route-minRating="@Model.Query.MinRating"
-                               asp-route-hasImages="@Model.Query.HasImages"
-                               asp-route-expertReviewer="@Model.Query.ExpertReviewer"
-                               asp-route-verifiedBuyer="@Model.Query.VerifiedBuyer" title="Trang sau">›</a>
+                               asp-all-route-data="@Model.Query.ToRouteValues()"
+                               asp-route-page="@(curPage + 1)" title="Trang sau">›</a>
                         }
                     </div>
                 }

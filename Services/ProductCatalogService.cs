@@ -12,7 +12,8 @@ public interface IProductCatalogService
     Task<ProductDetailDto> GetDetailAsync(int id, CancellationToken cancellationToken);
     Task<PagedResult<ReviewDto>> GetReviewsAsync(int productId, ReviewFilterQuery query, CancellationToken cancellationToken);
     Task<FlawExtractionDto> GetFlawsAsync(int productId, CancellationToken cancellationToken);
-    Task<IReadOnlyList<ReviewDto>> GetLatestReviewsAsync(int count, CancellationToken cancellationToken);     Task<IReadOnlyList<TopReviewerDto>> GetTopReviewersAsync(int count, CancellationToken cancellationToken);
+    Task<IReadOnlyList<ReviewDto>> GetLatestReviewsAsync(int count, CancellationToken cancellationToken);     
+    Task<IReadOnlyList<TopReviewerDto>> GetTopReviewersAsync(int count, CancellationToken cancellationToken);
     Task<IReadOnlyList<CategoryTopicDto>> GetHotTopicsAsync(CancellationToken cancellationToken);
     Task<(int TotalReviews, int TotalMembers)> GetPlatformStatsAsync(CancellationToken cancellationToken);
 }
@@ -273,7 +274,7 @@ public class ProductCatalogService : IProductCatalogService
             .Where(r => !r.IsHidden)
             .OrderByDescending(r => r.CreatedAt)
             .Take(count);
-
+        
         return await ReviewQueries.MapAsync(query, cancellationToken);
     }
 
@@ -309,6 +310,7 @@ public class ProductCatalogService : IProductCatalogService
             .Take(6)
             .ToListAsync(cancellationToken);
     }
+
 
     public async Task<(int TotalReviews, int TotalMembers)> GetPlatformStatsAsync(CancellationToken cancellationToken)
     {

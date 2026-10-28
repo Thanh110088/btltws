@@ -16,6 +16,41 @@ public class ProductQuery
 
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 12;
+
+    public Dictionary<string, string> ToRouteValues(params string[] exclude)
+    {
+        var set = new HashSet<string>(exclude, StringComparer.OrdinalIgnoreCase);
+        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrWhiteSpace(Keyword) && !set.Contains("keyword"))
+            dict["keyword"] = Keyword;
+
+        if (CategoryId.HasValue && CategoryId.Value > 0 && !set.Contains("categoryId"))
+            dict["categoryId"] = CategoryId.Value.ToString();
+
+        if (MinPrice.HasValue && !set.Contains("price") && !set.Contains("minPrice"))
+            dict["minPrice"] = MinPrice.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        if (MaxPrice.HasValue && !set.Contains("price") && !set.Contains("maxPrice"))
+            dict["maxPrice"] = MaxPrice.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        if (MinRating.HasValue && MinRating.Value > 0 && !set.Contains("minRating"))
+            dict["minRating"] = MinRating.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        if (HasImages == true && !set.Contains("hasImages"))
+            dict["hasImages"] = "true";
+
+        if (ExpertReviewer == true && !set.Contains("expertReviewer"))
+            dict["expertReviewer"] = "true";
+
+        if (VerifiedBuyer == true && !set.Contains("verifiedBuyer"))
+            dict["verifiedBuyer"] = "true";
+
+        if (!string.IsNullOrWhiteSpace(Sort) && !set.Contains("sort"))
+            dict["sort"] = Sort;
+
+        return dict;
+    }
 }
 
 public class ProductListItemDto

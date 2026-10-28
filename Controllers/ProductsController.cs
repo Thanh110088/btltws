@@ -23,7 +23,6 @@ public class ProductsController : Controller
         var topReviewers = await _catalog.GetTopReviewersAsync(5, cancellationToken);
         var hotTopics = await _catalog.GetHotTopicsAsync(cancellationToken);
         var (totalReviews, totalMembers) = await _catalog.GetPlatformStatsAsync(cancellationToken);
-
         var model = new ProductIndexViewModel
         {
             Products = products,
